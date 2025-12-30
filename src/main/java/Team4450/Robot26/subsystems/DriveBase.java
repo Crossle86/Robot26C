@@ -5,15 +5,21 @@ import static Team4450.Robot26.Constants.DriveConstants.*;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import Team4450.Lib.Util;
 import Team4450.Robot26.Constants.DriveConstants;
 import Team4450.Robot26.subsystems.SDS.CommandSwerveDrivetrain;
 import Team4450.Robot26.subsystems.SDS.TunerConstants;
+import Team4450.Robot26.utility.AdvantageScope;
 import Team4450.Robot26.subsystems.SDS.Telemetry;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.networktables.NTSendable;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
@@ -30,7 +36,11 @@ public class DriveBase extends SubsystemBase
     public PigeonWrapper                gyro = new PigeonWrapper(sdsDriveBase.getPigeon2());
     
     private final Telemetry     		logger = new Telemetry(kMaxSpeed);
+    // Field2d object creates the field display on the simulation and gives us an API
+    // to control what is displayed (the simulated robot).
 
+    private final Field2d               field2d = new Field2d();
+    
     private boolean                     fieldRelativeDriving = true, slowMode = false;
     private boolean                     neutralModeBrake = true;
     private double                      maxSpeed = kMaxSpeed * kDriveReductionPct; 
@@ -55,6 +65,8 @@ public class DriveBase extends SubsystemBase
         // Add gyro as a Sendable. Updates the dashboard heading indicator automatically.
 
 		SmartDashboard.putData("Gyro2", gyro); 
+
+        SmartDashboard.putData("Field2d", field2d);
 
 		// Check Gyro.
 	  
@@ -95,7 +107,7 @@ public class DriveBase extends SubsystemBase
         // Register for SDS telemetry.
 
         sdsDriveBase.registerTelemetry(logger::telemeterize);
-
+;
         updateDS();
     }
 
@@ -103,6 +115,17 @@ public class DriveBase extends SubsystemBase
     public void periodic() 
     {
         sdsDriveBase.periodic();
+
+        // update 3d simulation: look in AdvantageScope.java for more
+        AdvantageScope.getInstance().setRobotPose(getPose());
+        AdvantageScope.getInstance().update();
+        AdvantageScope.getInstance().setSwerveModules(sdsDriveBase);
+
+        // See this function for more information.
+        updateModulePoses(sdsDriveBase);
+
+        SmartDashboard.putNumber("Gyro angle", getYaw());
+        SmartDashboard.putString("Robot pose", getPose().toString());
     }
 
     public void drive(double throttle, double strafe, double rotation)
@@ -231,10 +254,49 @@ public class DriveBase extends SubsystemBase
         return gyro.getYaw();
     }
 
+    public double getYaw180()
+    {
+        return gyro.getYaw180();
+    }
+
     private void updateDS()
     {
         SmartDashboard.putBoolean("Brakes", neutralModeBrake);
         SmartDashboard.putBoolean("Field Oriented", fieldRelativeDriving);
-        SmartDashboard.putNumber("kMaxSpeed", kMaxSpeed);
+    }
+
+    /**
+     * Update the robot & swerve module displays on the "Field2d" field display in sim.
+     * @param sdsDriveBase Reference to SDS drivebase class under our DriveBase class.
+     * 
+     * SDS code has it's own class for logging and doing the field display ("Pose") under sim 
+     * and other data logged to the dashboard and to log files (Telemetry). 
+     * 
+     * We also have our own code for doing the field display and it draws the swerve modules 
+     * and thier angles on the simulated robot. This can be handy so we are displaying both fields
+     * for the time being. This function drives that display called Field2d under SmartDashboard. 
+     * If this field display is not needed it can be commented out and just use the SDS Telemetry.
+     */
+    @SuppressWarnings("rawtypes")
+    private void updateModulePoses(CommandSwerveDrivetrain sdsDriveBase)
+    {
+        Pose2d          modulePoses[] = new Pose2d[4], robotPose = getPose();
+
+        Translation2d   moduleLocations[] = sdsDriveBase.getModuleLocations(), moduleLocation;
+
+        SwerveModule    modules[] = sdsDriveBase.getModules();
+
+        for (int i = 0; i < modules.length; i++)
+        {
+            moduleLocation = moduleLocations[i]
+                .rotateBy(robotPose.getRotation())
+                .plus(robotPose.getTranslation());
+
+            modulePoses[i] = new Pose2d(moduleLocation, 
+                                modules[i].getCurrentState().angle.plus(Rotation2d.fromDegrees(-getYaw180())));
+        }
+
+        field2d.getObject("Robot").setPose(robotPose);
+        field2d.getObject("Swerve Modules").setPoses(modulePoses);
     }
 }

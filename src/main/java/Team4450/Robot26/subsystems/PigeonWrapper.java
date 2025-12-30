@@ -27,7 +27,7 @@ public class PigeonWrapper extends SubsystemBase
     }
 
     /**
-     * Returns yaw of robot. Continues beyond 360.
+     * Returns total yaw of robot. Continues beyond 360.
      * @return Yaw in degrees ccw(left)- cw(right)+.
      */
     public double getYaw()
@@ -57,9 +57,9 @@ public class PigeonWrapper extends SubsystemBase
     /**
      * Return total yaw angle accumulated since last call to reset() constrained
      * to +-180 degrees no matter how many degrees we have rotated.
-	 * @return Total yaw angle in degrees.
+	 * @return Yaw angle in degrees 0 to +-180, ccw(left)- cw(right)+.
      */
-	public double getTotalYaw180() 
+	public double getYaw180() 
     {
         return Math.IEEEremainder(getYaw(), 360);
     }
@@ -87,7 +87,7 @@ public class PigeonWrapper extends SubsystemBase
     public void initSendable(SendableBuilder builder) {
         builder.setSmartDashboardType("Gyro");
         builder.addDoubleProperty("Value", () -> getYaw(), null);
-        builder.addDoubleProperty("Yaw 180", () -> getTotalYaw180(), null);
+        builder.addDoubleProperty("Yaw 180", () -> getYaw180(), null);
         builder.addDoubleProperty("Heading", () -> getHeading(), null);
     }
 }

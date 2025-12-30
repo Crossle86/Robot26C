@@ -1,11 +1,15 @@
-package Team4450.Robot26;
+package Team4450.Robot26.utility;
 
 import java.util.ArrayList;
 
+import com.ctre.phoenix6.swerve.SwerveModule;
+
+import Team4450.Robot26.subsystems.SDS.CommandSwerveDrivetrain;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Quaternion;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -62,7 +66,7 @@ public class AdvantageScope {
         // for all the notes in the gamepiece inventory, set the pose to be above the robot
         // this could be changed to make it look like they are "in" the robot but thats not
         // super necessary (it would be cool though)
-        for (int i=0;i<gamepieceInventory.size();i++) {
+        for (int i = 0;i < gamepieceInventory.size();i++) {
             int id = gamepieceInventory.get(i);
             setGamepiecePose(id, new Pose3d(robotPose.getX(), robotPose.getY(), 0.5, new Rotation3d()));
         }
@@ -101,13 +105,14 @@ public class AdvantageScope {
     public void sendPoses(String key, Pose3d... poses) {
         ArrayList<Double> output = new ArrayList<Double>();
         
-        for (int i=0;i<poses.length;i++) {
+        for (int i = 0;i < poses.length;i++) {
             double[] poseArray = poseToArray(poses[i]);
             
-            for (int j=0;j<poseArray.length;j++) output.add(poseArray[j]);
+            for (int j = 0;j < poseArray.length;j++) output.add(poseArray[j]);
         }
         
         Double[] outputArray = output.toArray(new Double[0]);
+
         SmartDashboard.putNumberArray("Visualization/"+key, outputArray);
     }
 
@@ -126,21 +131,21 @@ public class AdvantageScope {
      * @return whether there was a successful pickup (for simulation)
      */
     public boolean attemptPickup() {
-        for (int i=0;i<gamepieces.length;i++) {
-            Pose3d note = gamepieces[i];
+        for (int i = 0;i < gamepieces.length;i++) {
+            Pose3d piecePose = gamepieces[i];
             
-            if (note == null) return true;
+            if (piecePose == null) return true;
             
-            double xdist = Math.abs(note.getX() - robotPose.getX());
-            double ydist = Math.abs(note.getY() - robotPose.getY());
+            double xdist = Math.abs(piecePose.getX() - robotPose.getX());
+            double ydist = Math.abs(piecePose.getY() - robotPose.getY());
             double dist = Math.sqrt(Math.pow(xdist, 2) + Math.pow(ydist, 2));
             
             if (dist < 0.5) {
                 pickupGamepiece(i);
                 return true;
             }
-
         }
+
         return false;
     }
 
@@ -150,8 +155,10 @@ public class AdvantageScope {
      * @return true/false
      */
     public boolean hasAGamepiece() {
-        if (gamepieceInventory.size() > 0 && RobotBase.isSimulation()) return true;
-        else return false;
+        if (gamepieceInventory.size() > 0 && RobotBase.isSimulation()) 
+            return true;
+        else 
+            return false;
     }
 
     /**
@@ -188,24 +195,25 @@ public class AdvantageScope {
         gyro = pose.getRotation().getDegrees();
     }
 
-    // FL, FR, BL, BR
     /**
      * Sends the swerve module poses to AdvantageScope
-     * @param fl the Front Left MAXSwerveModule object
-     * @param fr the Front Right MAXSwerveModule object
-     * @param bl the Back Left MAXSwerveModule object
-     * @param br the Back Right MAXSwerveModule object
+     * @param sdsDriveBase The SDS drive base class.
      */
-    // public void setSwerveModules(MAXSwerveModule fl, MAXSwerveModule fr, MAXSwerveModule bl, MAXSwerveModule br) {
-    //     swerveStates[0] = fl.getState().angle.getDegrees();
-    //     swerveStates[1] = fl.getState().speedMetersPerSecond;
-    //     swerveStates[2] = fr.getState().angle.getDegrees();
-    //     swerveStates[3] = fr.getState().speedMetersPerSecond;
-    //     swerveStates[4] = bl.getState().angle.getDegrees();
-    //     swerveStates[5] = bl.getState().speedMetersPerSecond;
-    //     swerveStates[6] = br.getState().angle.getDegrees();
-    //     swerveStates[7] = br.getState().speedMetersPerSecond;
-    //} rich
+    public void setSwerveModules(CommandSwerveDrivetrain sdsDriveBase) {
+        SwerveModuleState moduleStates[] = sdsDriveBase.getState().ModuleStates;
+        
+        swerveStates[0] = moduleStates[0].angle.getDegrees();
+        swerveStates[1] = moduleStates[0].speedMetersPerSecond;
+
+        swerveStates[2] = moduleStates[1].angle.getDegrees();
+        swerveStates[3] = moduleStates[1].speedMetersPerSecond;
+
+        swerveStates[4] = moduleStates[2].angle.getDegrees();
+        swerveStates[5] = moduleStates[2].speedMetersPerSecond;
+
+        swerveStates[6] = moduleStates[3].angle.getDegrees();
+        swerveStates[7] = moduleStates[3].speedMetersPerSecond;
+    } //rich
 
     /**
      * Access the singleton AdvantageScope object for use in code

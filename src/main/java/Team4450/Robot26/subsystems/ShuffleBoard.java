@@ -65,7 +65,7 @@ public class ShuffleBoard extends SubsystemBase
         
         // Lines 1 & 2 handled elsewhere.
 
-        LCD.printLine(LCD_4, "pose x=%.1fm  y=%.1fm  deg=%.1f  yaw=%.1f", pose.getX(), 
+        LCD.printLine(LCD_4, "pose x=%.2fm  y=%.2fm  deg=%.1f  yaw=%.1f", pose.getX(), 
                       pose.getY(), pose.getRotation().getDegrees(), RobotContainer.driveBase.getYaw());
 
         LCD.printLine(LCD_6, "uLX=%.2f  uLY=%.2f - uRX=%.2f  uRY=%.2f", 

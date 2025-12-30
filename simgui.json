@@ -1,0 +1,76 @@
+{
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/Pose": "Field2d",
+      "/SmartDashboard/Auto Program": "String Chooser",
+      "/SmartDashboard/Field2d": "Field2d",
+      "/SmartDashboard/Gyro2": "Gyro",
+      "/SmartDashboard/Module 0": "Mechanism2d",
+      "/SmartDashboard/Module 1": "Mechanism2d",
+      "/SmartDashboard/Module 2": "Mechanism2d",
+      "/SmartDashboard/Module 3": "Mechanism2d",
+      "/SmartDashboard/PathPlanner": "Alerts"
+    },
+    "windows": {
+      "/Pose": {
+        "bottom": 1638,
+        "height": 8.051901817321777,
+        "left": 534,
+        "right": 3466,
+        "robotPose": {
+          "length": 0.7365999817848206,
+          "width": 0.7365999817848206
+        },
+        "top": 291,
+        "units": "inches",
+        "width": 17.54825210571289,
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/Auto Program": {
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/Field2d": {
+        "Robot": {
+          "length": 0.7365999817848206,
+          "style": "Box/Image",
+          "width": 0.7365999817848206
+        },
+        "Swerve Modules": {
+          "image": "resources\\swerve_module.png",
+          "length": 0.30480000376701355,
+          "width": 0.30480000376701355
+        },
+        "bottom": 1638,
+        "height": 8.051901817321777,
+        "left": 534,
+        "right": 3466,
+        "top": 291,
+        "units": "inches",
+        "width": 17.54825210571289,
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/Gyro2": {
+        "window": {
+          "visible": true
+        }
+      }
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "SmartDashboard": {
+        "open": true
+      }
+    }
+  },
+  "NetworkTables Info": {
+    "visible": true
+  }
+}
