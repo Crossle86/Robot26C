@@ -1,6 +1,7 @@
 {
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.server.launchMode": "Standard",
+  "java.jdt.ls.java.home": "C:\\Users\\Public\\wpilib\\2026\\jdk",
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
@@ -14,6 +15,17 @@
     "**/.factorypath": true,
     "**/*~": true
   },
+  "terminal.integrated.env.windows": {
+    "JAVA_HOME": "C:\\Users\\Public\\wpilib\\2026\\jdk",
+    "PATH": "C:\\Users\\Public\\wpilib\\2026\\jdk\\bin;${env:PATH}"
+  },
+    "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "C:\\Users\\Public\\wpilib\\2026\\jdk",
+      "default": true
+    }
+	],
   "java.test.config": [
     {
       "name": "WPIlibUnitTests",
@@ -60,5 +72,8 @@
   "java.dependency.enableDependencyCheckup": false,
   "wpilib.skipSelectSimulateExtension": true,
   "editor.inlayHints.enabled": "off",
-  "editor.fontSize": 13
+  "editor.fontSize": 13,
+  "git.path": "C:\\Users\\rcorn\\AppData\\Local\\Atlassian\\SourceTree\\git_local\\bin\\git.exe",
+  "files.autoSave": "afterDelay",
+  "editor.fontWeight": "800",
 }
