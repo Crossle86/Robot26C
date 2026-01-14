@@ -291,6 +291,10 @@ public class DriveBase extends SubsystemBase {
     // AddVisionUpdate
     public void addVisionMeasurement(Pose2d pose, double timestampSeconds) {
         // Use the visionBuffer
+        // Truncate vision buffer
+        // Append current vision measurement
+        // Replay vision poses
+        // Remove any vision poses the break the laws of physics
 
         // Basic vision update that just sets the pose, this is good enough for testing if it is working
         robotPose = pose;

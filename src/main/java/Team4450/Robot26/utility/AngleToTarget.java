@@ -4,8 +4,8 @@ import Team4450.Robot26.Constants;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
-public class AngleToTarget {
-    // All targeting should be 
+public final class AngleToTarget {
+    // All targeting should be based on the WPIBlue coordinate system
     public double getAngleToFaceGoalDegrees(Pose2d robotPosition) {
         // If blue side
         double xDiff = 0;
@@ -20,7 +20,8 @@ public class AngleToTarget {
         } else {
             // Error
         }
-        // Simplify this stuff
-        return (Math.toDegrees(Math.atan(yDiff / xDiff)) + robotPosition.getRotation().getDegrees() - 180);
+        // Return degrees to angle to face the target
+        // This code does not take into account the curret robot angle because we want to set this as the target robot angle
+        return (Math.toDegrees(Math.atan(yDiff / xDiff)));
     }
 }
