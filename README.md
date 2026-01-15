@@ -16,7 +16,13 @@ Operates the robot **TBA** for FRC game **Rebuilt**.
 
 ### If RobotLib gets an update:
 Download the RobotLib.json file from the RobotLib Github repo and drop it into the vendordeps folder inside the project folder. Build the project.
-************************************************************************************************************
+***********************************************************************************************************
+Version 26.1.0
+
+*   Updated WPILib and all vendor libraries to 2026 kickoff releases.
+
+R. Corn, January 14 2026
+
 Version 26.0.2
 
 *   Update to WPILib-2026-Beta-1 and available beta vendordeps.
