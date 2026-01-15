@@ -301,6 +301,13 @@ public class RobotContainer {
 			
 		// -------- Utility controller buttons ----------
 
+		// Driver controller A/B used for flywheel start/stop (TestSubsystem currently drives the motor)
+		new Trigger(() -> driverController.getAButton())
+			.onTrue(new InstantCommand(testSubsystem::start));
+
+		new Trigger(() -> driverController.getBButton())
+			.onTrue(new InstantCommand(testSubsystem::stop));
+
 	}
 
 	/**
