@@ -87,7 +87,7 @@ public class Turret extends SubsystemBase {
             return HUB_BLUE_WELDED_POSE;
         // If red side
         } else if (alliance == Alliance.Red) {
-            return HUB_RED_ANDYMARK_POSE;
+            return HUB_RED_WELDED_POSE;
         } else {
             return null; // Error
         }
@@ -98,12 +98,12 @@ public class Turret extends SubsystemBase {
         double xDiff = 0;
         double yDiff = 0;
         if (alliance == Alliance.Blue) {
-            xDiff = HUB_BLUE_ANDYMARK_POSE.getX() - robotPosition.getX();
-            yDiff = HUB_BLUE_ANDYMARK_POSE.getY() + robotPosition.getY();
+            xDiff = HUB_BLUE_WELDED_POSE.getX() - robotPosition.getX();
+            yDiff = HUB_BLUE_WELDED_POSE.getY() + robotPosition.getY();
         // If red side
         } else if (alliance == Alliance.Red) {
-            xDiff = HUB_RED_ANDYMARK_POSE.getX() - robotPosition.getX();
-            yDiff = HUB_RED_ANDYMARK_POSE.getY() - robotPosition.getY();
+            xDiff = HUB_RED_WELDED_POSE.getX() - robotPosition.getX();
+            yDiff = HUB_RED_WELDED_POSE.getY() - robotPosition.getY();
         } else {
             // Error
         }

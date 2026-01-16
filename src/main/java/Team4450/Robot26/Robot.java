@@ -99,8 +99,6 @@ public class Robot extends TimedRobot
           SendableVersion.INSTANCE.getUser(), SendableVersion.INSTANCE.getTime(), SendableVersion.INSTANCE.getBranch(),
           SendableVersion.INSTANCE.getCommit());
 
-      //Util.consoleLog("manifest path=%s", SendableVersion.INSTANCE.getPath());
-
       // Send program version to the dashboard.
       SmartDashboard.putString("Program", PROGRAM_NAME);
 

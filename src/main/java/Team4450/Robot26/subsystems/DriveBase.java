@@ -119,7 +119,7 @@ public class DriveBase extends SubsystemBase {
         sdsDriveBase.periodic();
 
         // update 3d simulation: look in AdvantageScope.java for more
-        AdvantageScope.getInstance().setRobotPose(getPose());
+        AdvantageScope.getInstance().setRobotPose(getODPose());
         AdvantageScope.getInstance().update();
         AdvantageScope.getInstance().setSwerveModules(sdsDriveBase);
 
@@ -128,7 +128,7 @@ public class DriveBase extends SubsystemBase {
 
         // Basic telemetry
         SmartDashboard.putNumber("Gyro angle", getYaw());
-        SmartDashboard.putString("Robot od pose", getPose().toString());
+        SmartDashboard.putString("Robot od pose", getODPose().toString());
         if (robotPose != null) {
             SmartDashboard.putString("Robot pose", robotPose.toString());
         }
@@ -251,9 +251,13 @@ public class DriveBase extends SubsystemBase {
      * Returns current pose of the robot.
      * @return Robot pose.
      */
-    public Pose2d getPose()
+    public Pose2d getODPose()
     {
         return sdsDriveBase.getState().Pose;
+    }
+
+    public Pose2d getPose() {
+        return robotPose;
     }
 
     public double getYaw()
@@ -296,7 +300,7 @@ public class DriveBase extends SubsystemBase {
     }
 
     public double getAngleToAim(Pose2d targetPose) {
-        Pose2d currentPose = getPose();
+        Pose2d currentPose = getODPose();
     
         double deltaX = targetPose.getX() - currentPose.getX();
         double deltaY = targetPose.getY() - currentPose.getY();
@@ -360,7 +364,7 @@ public class DriveBase extends SubsystemBase {
     }
 
     public Pose2d getPoseToAim(Pose2d targetPose) {
-        Pose2d currentPose = getPose();
+        Pose2d currentPose = getODPose();
     
         double deltaX = targetPose.getX() - currentPose.getX();
         double deltaY = targetPose.getY() - currentPose.getY();
@@ -414,7 +418,7 @@ public class DriveBase extends SubsystemBase {
     }
 
     public double getDistFromRobot(Pose2d targetPose) {
-        Pose2d currentPose = getPose();
+        Pose2d currentPose = getODPose();
     
         double deltaX = targetPose.getX() - currentPose.getX();
         double deltaY = targetPose.getY() - currentPose.getY();
@@ -440,11 +444,11 @@ public class DriveBase extends SubsystemBase {
     @SuppressWarnings("rawtypes")
     private void updateModulePoses(CommandSwerveDrivetrain sdsDriveBase)
     {
-        Pose2d          modulePoses[] = new Pose2d[4], robotPose = getPose();
+        Pose2d modulePoses[] = new Pose2d[4], robotPose = getODPose();
 
-        Translation2d   moduleLocations[] = sdsDriveBase.getModuleLocations(), moduleLocation;
+        Translation2d moduleLocations[] = sdsDriveBase.getModuleLocations(), moduleLocation;
 
-        SwerveModule    modules[] = sdsDriveBase.getModules();
+        SwerveModule modules[] = sdsDriveBase.getModules();
 
         for (int i = 0; i < modules.length; i++)
         {

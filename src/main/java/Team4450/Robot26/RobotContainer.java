@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import com.pathplanner.lib.trajectory.PathPlannerTrajectory;
 
 /**
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -42,7 +43,7 @@ public class RobotContainer {
     public static VisionSubsystem visionSubsystem;
     public static QuestNavSubsystem questNavSubsystem;
 
-	public final DriveCommand			 driveCommand;
+	public final DriveCommand driveCommand;
 
     public TestSubsystem testSubsystem;
 
@@ -70,11 +71,7 @@ public class RobotContainer {
     // When in the middle swap from hub heading targeting to left or right of the hub targeting driving
     //
     // Shoot on the move ability
-	
-
-
-
-
+    //
 	// Subsystem Default Commands.
 
     // Persistent Commands.
@@ -100,15 +97,18 @@ public class RobotContainer {
 	public static XboxController driverController =  new XboxController(DRIVER_PAD);
 	public static XboxController utilityController = new XboxController(UTILITY_PAD);
 
-	private PowerDistribution		pdp = new PowerDistribution(REV_PDB, PowerDistribution.ModuleType.kRev);
+	private PowerDistribution pdp = new PowerDistribution(REV_PDB, PowerDistribution.ModuleType.kRev);
 
 	// Trajectories we load manually.
-	//public static PathPlannerTrajectory	ppTestTrajectory;
+    // I'm am doing reading about how this works, how to 
+	public static PathPlannerTrajectory	ppTestTrajectory;
 
 	private static SendableChooser<Command>	autoChooser;
 	
 	private static String 			autonomousCommandName = "none";
 
+	private static PIDController throttlePID;
+	private static PIDController strafePID;
 	private static PIDController headingPID;
 
 	/**
@@ -156,6 +156,8 @@ public class RobotContainer {
         visionSubsystem = new VisionSubsystem(driveBase);
         questNavSubsystem = new QuestNavSubsystem(driveBase);
 
+		throttlePID = new PIDController(Constants.ROBOT_THROTTLE_KP, Constants.ROBOT_THROTTLE_KI, Constants.ROBOT_THROTTLE_KD);
+		strafePID = new PIDController(Constants.ROBOT_STRAFE_KP, Constants.ROBOT_STRAFE_KI, Constants.ROBOT_STRAFE_KD);
 		headingPID = new PIDController(Constants.ROBOT_HEADING_KP, Constants.ROBOT_HEADING_KI, Constants.ROBOT_HEADING_KD);
 
 		// Create any persistent commands.
@@ -201,6 +203,9 @@ public class RobotContainer {
 									driverController.getRightYDS(),
 									driverController, headingPID);
 		driveBase.setDefaultCommand(driveCommand);
+
+        // Create a new pid drive command when going to another target, it is then killed by force or once target is reached
+        // pidDriveCommand = new PIDDriveCommand(driveBase, throttlePID, strafePID, headingPID)
 
         // IDK if I have to init SmartDashboard data
         SmartDashboard.putNumber("Test Motor Power", 0);

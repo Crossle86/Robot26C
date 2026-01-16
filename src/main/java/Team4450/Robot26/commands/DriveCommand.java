@@ -84,17 +84,9 @@ public class DriveCommand extends Command
 
         Pose2d hubPosition;
         if (alliance == DriverStation.Alliance.Blue) {
-            if (WELDED_FIELD) {
-                hubPosition = new Pose2d(HUB_BLUE_WELDED_POSE.getX(), HUB_BLUE_WELDED_POSE.getY(), Rotation2d.kZero);
-            } else {
-                hubPosition = new Pose2d(HUB_BLUE_ANDYMARK_POSE.getX(), HUB_BLUE_ANDYMARK_POSE.getY(), Rotation2d.kZero);
-            }
+            hubPosition = new Pose2d(HUB_BLUE_WELDED_POSE.getX(), HUB_BLUE_WELDED_POSE.getY(), Rotation2d.kZero);
         } else {
-            if (WELDED_FIELD) {
-                hubPosition = new Pose2d(HUB_RED_WELDED_POSE.getX(), HUB_RED_WELDED_POSE.getY(), Rotation2d.kZero);
-            } else {
-                hubPosition = new Pose2d(HUB_RED_ANDYMARK_POSE.getX(), HUB_RED_ANDYMARK_POSE.getY(), Rotation2d.kZero);
-            }
+            hubPosition = new Pose2d(HUB_RED_WELDED_POSE.getX(), HUB_RED_WELDED_POSE.getY(), Rotation2d.kZero);
         }
         
         double targetHeading;

@@ -74,8 +74,6 @@ public final class Constants {
     public static double FIELD_MAX_X = 16.54;
     public static double FIELD_MAX_Y = 8.07;
 
-    public static boolean WELDED_FIELD = false;
-
     // HUB Positions (Center of the HUB)
     
     // THESE ARE ALL IN INCHES AS THAT IS WHAT THE FIELD IS DEFINED IN
@@ -88,10 +86,10 @@ public final class Constants {
 
     // Blue
     // Comment out the not welded field
-    public static Pose2d HUB_BLUE_ANDYMARK_POSE = new Pose2d(4.611, 4.021, Rotation2d.kZero);
+    // public static Pose2d HUB_BLUE_ANDYMARK_POSE = new Pose2d(4.611, 4.021, Rotation2d.kZero);
     public static Pose2d HUB_BLUE_WELDED_POSE = new Pose2d(4.625, 4.034, Rotation2d.kZero);
     // Red
-    public static Pose2d HUB_RED_ANDYMARK_POSE = new Pose2d(11.901, 4.021, Rotation2d.kZero);
+    // public static Pose2d HUB_RED_ANDYMARK_POSE = new Pose2d(11.901, 4.021, Rotation2d.kZero);
     public static Pose2d HUB_RED_WELDED_POSE = new Pose2d(11.915, 4.034, Rotation2d.kZero);
 
     public static double NEUTRAL_BLUE_ZONE_BARRIER_X = 4.572;
@@ -104,6 +102,16 @@ public final class Constants {
     public static Pose2d FERRY_RED_BLANK_CORNER = new Pose2d(15.243, 0.635, Rotation2d.kZero);
 
     public static double FIELD_MIDDLE_Y = 4.021;
+
+    public static double ROBOT_THROTTLE_KP = 0.012;
+    public static double ROBOT_THROTTLE_KI = 0;
+    public static double ROBOT_THROTTLE_KI_MAX = 0;
+    public static double ROBOT_THROTTLE_KD = 0;
+
+    public static double ROBOT_STRAFE_KP = 0.012;
+    public static double ROBOT_STRAFE_KI = 0;
+    public static double ROBOT_STRAFE_KI_MAX = 0;
+    public static double ROBOT_STRAFE_KD = 0;
 
     public static double ROBOT_HEADING_KP = 0.012; // 0.03 seems resonable on the test field
     public static double ROBOT_HEADING_KI = 0;
