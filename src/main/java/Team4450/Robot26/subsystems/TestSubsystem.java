@@ -92,18 +92,19 @@ public class TestSubsystem extends SubsystemBase {
         lastRps = measuredRps;
     }
 
-    public void start() {
-        // Start by setting the target RPM from constants. periodic() will ramp the motor to it.
-        this.targetRpm = Constants.FLYWHEEL_DEFAULT_TARGET_RPM;
-    }
 
-    public void stop() {
-        // Ramp down to zero
-        this.targetRpm = 0.0;
-    }
+    // public void start() {
+    //     // Start by setting the target RPM from constants. periodic() will ramp the motor to it.
+    //     this.targetRpm = Constants.FLYWHEEL_DEFAULT_TARGET_RPM;
+    // }
 
-    // Optional programmatic control
-    public void setTargetRpm(double rpm) { this.targetRpm = rpm; }
-    public double getTargetRpm() { return this.targetRpm; }
-    public double getCurrentRpm() { return this.currentRpm; }
+    // public void stop() {
+    //     // Ramp down to zero
+    //     this.targetRpm = 0.0;
+    // }
+
+    // // Optional programmatic control
+    // public void setTargetRpm(double rpm) { this.targetRpm = rpm; }
+    // public double getTargetRpm() { return this.targetRpm; }
+    // public double getCurrentRpm() { return this.currentRpm; }
 }

@@ -9,13 +9,15 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import Team4450.Lib.LCD;
 import Team4450.Lib.Util;
+import Team4450.Robot26.Constants;
 import Team4450.Robot26.subsystems.DriveBase;
 import static Team4450.Robot26.Constants.*;
 import Team4450.Robot26.utility.ConsoleEveryX;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class DriveCommand extends Command 
 {
-    private final DriveBase         driveBase;
+    private final DriveBase         drivebase;
 
     private final DoubleSupplier    throttleSupplier;
     private final DoubleSupplier    strafeSupplier;
@@ -34,7 +36,7 @@ public class DriveCommand extends Command
     {
         Util.consoleLog();
 
-        this.driveBase = driveBase;
+        this.drivebase = driveBase;
         this.throttleSupplier = throttleSupplier;
         this.strafeSupplier = strafeSupplier;
         this.rotationXSupplier = rotationXSupplier;
@@ -91,30 +93,32 @@ public class DriveCommand extends Command
         
         double targetHeading;
         if (rotationXSupplier.getAsDouble() == 0 && rotationYSupplier.getAsDouble() == 0 && alliance == DriverStation.Alliance.Blue) {
-            if (driveBase.robotPose.getX() < NEUTRAL_BLUE_ZONE_BARRIER_X) {
-                targetHeading = driveBase.getAngleToAim(hubPosition);
+            if (drivebase.getODPose().getX() < NEUTRAL_BLUE_ZONE_BARRIER_X) {
+                targetHeading = drivebase.getAngleToAim(hubPosition);
             } else {
-                if (driveBase.robotPose.getY() < FIELD_MIDDLE_Y) {
-                    targetHeading = driveBase.getAngleToAim(FERRY_BLUE_OUTPOST_CORNER);
+                if (drivebase.getODPose().getY() < FIELD_MIDDLE_Y) {
+                    targetHeading = drivebase.getAngleToAim(FERRY_BLUE_OUTPOST_CORNER);
                 } else {
-                    targetHeading = driveBase.getAngleToAim(FERRY_BLUE_BLANK_CORNER);
+                    targetHeading = drivebase.getAngleToAim(FERRY_BLUE_BLANK_CORNER);
                 }
             }
         } else if (rotationXSupplier.getAsDouble() == 0 && rotationYSupplier.getAsDouble() == 0 && alliance == DriverStation.Alliance.Red) {
-            if (driveBase.robotPose.getX() > NEUTRAL_RED_ZONE_BARRIER_X) {
-                targetHeading = driveBase.getAngleToAim(hubPosition);
+            if (drivebase.getODPose().getX() > NEUTRAL_RED_ZONE_BARRIER_X) {
+                targetHeading = drivebase.getAngleToAim(hubPosition);
             } else {
-                if (driveBase.robotPose.getY() < FIELD_MIDDLE_Y) {
-                    targetHeading = driveBase.getAngleToAim(FERRY_RED_BLANK_CORNER);
+                if (drivebase.getODPose().getY() < FIELD_MIDDLE_Y) {
+                    targetHeading = drivebase.getAngleToAim(FERRY_RED_BLANK_CORNER);
                 } else {
-                    targetHeading = driveBase.getAngleToAim(FERRY_RED_OUTPOST_CORNER);
+                    targetHeading = drivebase.getAngleToAim(FERRY_RED_OUTPOST_CORNER);
                 }
             }
+            
         } else {
             targetHeading = Math.toDegrees(Math.atan2(rotationYSupplier.getAsDouble(), rotationXSupplier.getAsDouble()));
         }
 
-        double rotation = headingPID.calculate(driveBase.getYaw180(), targetHeading);
+        // double rotation = -headingPID.calculate(drivebase.getYaw180(), -targetHeading);
+        double rotation = rotationXSupplier.getAsDouble();
         double throttle = throttleSupplier.getAsDouble();
         double strafe = strafeSupplier.getAsDouble();
 
@@ -129,7 +133,9 @@ public class DriveCommand extends Command
         ConsoleEveryX rotationLog = new ConsoleEveryX(200);
         rotationLog.update("Heading PID rotation output: " + String.valueOf(rotation));
 
-        driveBase.drive(throttle, strafe, rotation);
+        headingPID.setP(SmartDashboard.getNumber("Heading P", Constants.ROBOT_HEADING_KP));
+
+        drivebase.drive(throttle, strafe, rotation);
     }
 
     @Override 
