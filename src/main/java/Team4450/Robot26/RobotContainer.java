@@ -150,6 +150,7 @@ public class RobotContainer {
 		throttlePID = new PIDController(Constants.ROBOT_THROTTLE_KP, Constants.ROBOT_THROTTLE_KI, Constants.ROBOT_THROTTLE_KD);
 		strafePID = new PIDController(Constants.ROBOT_STRAFE_KP, Constants.ROBOT_STRAFE_KI, Constants.ROBOT_STRAFE_KD);
 		headingPID = new PIDController(Constants.ROBOT_HEADING_KP, Constants.ROBOT_HEADING_KI, Constants.ROBOT_HEADING_KD);
+        SmartDashboard.putNumber("Heading P", Constants.ROBOT_HEADING_KP);
 
 		// Create any persistent commands.
 

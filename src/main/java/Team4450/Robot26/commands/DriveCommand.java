@@ -9,9 +9,11 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import Team4450.Lib.LCD;
 import Team4450.Lib.Util;
+import Team4450.Robot26.Constants;
 import Team4450.Robot26.subsystems.DriveBase;
 import static Team4450.Robot26.Constants.*;
 import Team4450.Robot26.utility.ConsoleEveryX;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class DriveCommand extends Command 
 {
@@ -115,8 +117,8 @@ public class DriveCommand extends Command
             targetHeading = Math.toDegrees(Math.atan2(rotationYSupplier.getAsDouble(), rotationXSupplier.getAsDouble()));
         }
 
-        double rotation = -headingPID.calculate(drivebase.getYaw180(), -targetHeading);
-        // double rotation = rotationXSupplier.getAsDouble();
+        // double rotation = -headingPID.calculate(drivebase.getYaw180(), -targetHeading);
+        double rotation = rotationXSupplier.getAsDouble();
         double throttle = throttleSupplier.getAsDouble();
         double strafe = strafeSupplier.getAsDouble();
 
@@ -130,6 +132,8 @@ public class DriveCommand extends Command
         //
         ConsoleEveryX rotationLog = new ConsoleEveryX(200);
         rotationLog.update("Heading PID rotation output: " + String.valueOf(rotation));
+
+        headingPID.setP(SmartDashboard.getNumber("Heading P", Constants.ROBOT_HEADING_KP));
 
         drivebase.drive(throttle, strafe, rotation);
     }
