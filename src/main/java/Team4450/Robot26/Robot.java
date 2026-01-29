@@ -7,6 +7,8 @@ import Team4450.Robot26.utility.RobotOrientation;
 import Team4450.Robot26.wpilib.TimedRobot;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+
+//import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -127,8 +129,6 @@ public class Robot extends TimedRobot {
             Util.logException(e);
             endCompetition();
         }
-
-        Util.consoleLog(functionMarker);
     }
 
     /**
