@@ -127,6 +127,7 @@ public class DriveCommand extends Command
             targetHeading = -Math.toDegrees(Math.atan2(rotationYSupplier.getAsDouble(), rotationXSupplier.getAsDouble()));
         }
         
+        
         SmartDashboard.putNumber("Target Heading", targetHeading);
 
         // Adjusts for static friction, an F variable would also be an option but this works well
