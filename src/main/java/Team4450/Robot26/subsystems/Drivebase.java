@@ -25,27 +25,25 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import Team4450.Robot26.utility.RobotOrientation;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.math.geometry.Transform2d;
 
 /**
  * This class wraps the SDS drive base subsystem allowing us to add/modify drive base
  * functions without modifyinig the SDS code generated from Tuner. Also allows for
  * convenience wrappers for more complex functions in SDS code.
  */
-public class DriveBase extends SubsystemBase {
-    private CommandSwerveDrivetrain     sdsDriveBase = TunerConstants.createDrivetrain();
+public class Drivebase extends SubsystemBase {
+    private CommandSwerveDrivetrain     sdsDrivebase = TunerConstants.createDrivetrain();
 
-    public PigeonWrapper pigeonWrapper = new PigeonWrapper(sdsDriveBase.getPigeon2());
+    public PigeonWrapper pigeonWrapper = new PigeonWrapper(sdsDrivebase.getPigeon2());
 
     // This should init to whatever the limelights see during the init period, otherwise set a smartdashboard and a console log into if it does not
     public Pose2d robotPose = new Pose2d(0, 0, Rotation2d.kZero);
-    public Transform2d limelightOffsetPose = new Transform2d(0, 0, Rotation2d.kZero);
+    public Pose2d limelightPoseEstimate = new Pose2d(0, 0, Rotation2d.kZero);
     
     private final Telemetry     		logger = new Telemetry(kMaxSpeed);
+
     // Field2d object creates the field display on the simulation and gives us an API
     // to control what is displayed (the simulated robot).
-
     private final Field2d               field2d = new Field2d();
     
     private boolean                     fieldRelativeDriving = true, slowMode = false;
@@ -65,33 +63,30 @@ public class DriveBase extends SubsystemBase {
             .withRotationalDeadband(kMaxAngularRate * ROTATION_DEADBAND) // Add deadbands
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
-    public DriveBase() {
+    public Drivebase() {
         Util.consoleLog();
 
         // Add pigeon gyro as a Sendable. Updates the dashboard heading indicator automatically.
-
 		SmartDashboard.putData("Pigeon Gyro", pigeonWrapper); 
         SmartDashboard.putData("Field2d", field2d);
 
 		// Check Gyro.
 		if (pigeonWrapper.getPigeon().isConnected())
 			Util.consoleLog("Pigeon connected version=%s", pigeonWrapper.getPigeon().getVersion());
-		else
-		{
+		else {
 			Exception e = new Exception("Pigeon is NOT connected!");
 			Util.logException(e);
 		}
 
         // Set drive motors to brake when power is zero.
-        sdsDriveBase.configNeutralMode(NeutralModeValue.Brake);
+        sdsDrivebase.configNeutralMode(NeutralModeValue.Brake);
 
 		// Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
-        
 		final var idle = new SwerveRequest.Idle();
 
         RobotModeTriggers.disabled().whileTrue(
-            sdsDriveBase.applyRequest(() -> idle).ignoringDisable(true)
+            sdsDrivebase.applyRequest(() -> idle).ignoringDisable(true)
         );
 
         // Set tracking of robot field position at starting point. Blue perspective.
@@ -110,22 +105,22 @@ public class DriveBase extends SubsystemBase {
         if (RobotBase.isSimulation()) driveField.ForwardPerspective = ForwardPerspectiveValue.BlueAlliance;
 		         
         // Register for SDS telemetry.
-        sdsDriveBase.registerTelemetry(logger::telemeterize);
+        sdsDrivebase.registerTelemetry(logger::telemeterize);
 
         updateDS();
     }
 
     @Override
     public void periodic() {
-        sdsDriveBase.periodic();
+        sdsDrivebase.periodic();
 
         // update 3d simulation: look in AdvantageScope.java for more
         AdvantageScope.getInstance().setRobotPose(getODPose());
         AdvantageScope.getInstance().update();
-        AdvantageScope.getInstance().setSwerveModules(sdsDriveBase);
+        AdvantageScope.getInstance().setSwerveModules(sdsDrivebase);
 
         // See this function for more information.
-        updateModulePoses(sdsDriveBase);
+        updateModulePoses(sdsDrivebase);
 
         // Basic telemetry
         SmartDashboard.putNumber("Gyro angle", getYaw());
@@ -136,11 +131,17 @@ public class DriveBase extends SubsystemBase {
     }
 
     public void drive(double throttle, double strafe, double rotation) {
-        if (fieldRelativeDriving)
-            sdsDriveBase.setControl(
+        if (fieldRelativeDriving) {
+            sdsDrivebase.setControl(
                 driveField.withVelocityX(throttle * maxSpeed) 
                         .withVelocityY(strafe * maxSpeed) 
                         .withRotationalRate(rotation * maxRotRate));
+        } else {
+            sdsDrivebase.setControl(
+                driveRobot.withVelocityX(throttle * maxSpeed) 
+                        .withVelocityY(strafe * maxSpeed) 
+                        .withRotationalRate(rotation * maxRotRate));
+        }
 
         SmartDashboard.putNumber("Drive Velocity X", driveField.VelocityX);
         SmartDashboard.putNumber("Drive Velocity Y", driveField.VelocityY);
@@ -150,15 +151,13 @@ public class DriveBase extends SubsystemBase {
     /**
      * Set drive wheels to X configuration to lock robot from moving.
      */
-    public void setX()
-    {
+    public void setX() {
         Util.consoleLog();
 
-        sdsDriveBase.applyRequest(() -> driveBrake);
+        sdsDrivebase.applyRequest(() -> driveBrake);
     }
         
-	public void toggleFieldRelativeDriving()
-	{
+	public void toggleFieldRelativeDriving() {
 		fieldRelativeDriving = !fieldRelativeDriving;
 
         Util.consoleLog("%b", fieldRelativeDriving);
@@ -166,53 +165,47 @@ public class DriveBase extends SubsystemBase {
         updateDS();
 	}
 
-    public void toggleSlowMode() 
-    {
+    public void toggleSlowMode() {
         slowMode = !slowMode;
 
         Util.consoleLog("%b", slowMode);
 
-        if (slowMode)
-        {
+        if (slowMode) {
             // In slow mode, apply slow mode percentages.
             maxSpeed = kMaxSpeed * kSlowModeLinearPct;
             maxRotRate = kMaxAngularRate * kSlowModeRotationPct;
         }
-        else
-        {
+        else {
             // In normal mode, apply reduction percentages.
             maxSpeed = kMaxSpeed * kDriveReductionPct;
             maxRotRate = kMaxAngularRate * kRotationReductionPct;
         }
     }
 
-    public void toggleNeutralMode()
-    {
+    public void toggleNeutralMode() {
         neutralModeBrake = !neutralModeBrake;
 
         Util.consoleLog("%b", neutralModeBrake);
 
         if (neutralModeBrake)
-            sdsDriveBase.configNeutralMode(NeutralModeValue.Brake);
+            sdsDrivebase.configNeutralMode(NeutralModeValue.Brake);
         else
-            sdsDriveBase.configNeutralMode(NeutralModeValue.Coast);
+            sdsDrivebase.configNeutralMode(NeutralModeValue.Coast);
 
         updateDS();
     }
 
-    public void resetFieldOrientation()
-    {
+    public void resetFieldOrientation() {
         Util.consoleLog();
         
-        sdsDriveBase.seedFieldCentric();
+        sdsDrivebase.seedFieldCentric();
     }
 
     /**
      * Sets the gyroscope yaw angle to zero. This can be used to set the direction
      * the robot is currently facing to the 'forwards' direction.
      */
-    public void zeroGyro()
-    {
+    public void zeroGyro() {
         Util.consoleLog();
 
         pigeonWrapper.reset();
@@ -226,7 +219,7 @@ public class DriveBase extends SubsystemBase {
     public void resetOdometry(Pose2d pose) {
         Util.consoleLog(pose.toString());
 
-        sdsDriveBase.resetPose(pose);
+        sdsDrivebase.resetPose(pose);
 
         setStartingGyroYaw(-pose.getRotation().getDegrees());
     }
@@ -236,36 +229,37 @@ public class DriveBase extends SubsystemBase {
      * with back bumper parallel to the wall. 
      * @param degrees - is clockwise (cw or right).
      */
-    public void setStartingGyroYaw(double degrees)
-    {
+    public void setStartingGyroYaw(double degrees) {
         pigeonWrapper.setStartingGyroYaw(degrees);
     }
 
     /**
-     * Returns current pose of the robot.
+     * Returns current sds drivebase odometry pose of the robot.
+     * @return Robot odometry pose.
+     */
+    public Pose2d getODPose() {
+        return sdsDrivebase.getState().Pose;
+    }
+
+    /**
+     * Returns current pose estimate for the robot.
      * @return Robot pose.
      */
-    public Pose2d getODPose()
-    {
-        return sdsDriveBase.getState().Pose;
-    }
-
     public Pose2d getPose() {
-        return robotPose.transformBy(this.limelightOffsetPose);
+        return robotPose;
     }
 
+    @Deprecated
     public Pose3d getPose3d() {
         // I think it should be fine to always assume zero z
         return new Pose3d(getPose());
     }
 
-    public double getYaw()
-    {
+    public double getYaw() {
         return pigeonWrapper.getYaw();
     }
 
-    public double getYaw180()
-    {
+    public double getYaw180() {
         return pigeonWrapper.getYaw180();
     }
 
@@ -273,8 +267,7 @@ public class DriveBase extends SubsystemBase {
         return new RobotOrientation(pigeonWrapper.pigeon.getYaw().getValueAsDouble(), pigeonWrapper.pigeon.getAngularVelocityXWorld().getValueAsDouble(), pigeonWrapper.pigeon.getPitch().getValueAsDouble(), pigeonWrapper.pigeon.getAngularVelocityYDevice().getValueAsDouble(), pigeonWrapper.pigeon.getRoll().getValueAsDouble(), pigeonWrapper.pigeon.getAngularVelocityZWorld().getValueAsDouble());
     }
 
-    private void updateDS()
-    {
+    private void updateDS() {
         SmartDashboard.putBoolean("Brakes", neutralModeBrake);
         SmartDashboard.putBoolean("Field Oriented", fieldRelativeDriving);
     }
@@ -283,9 +276,14 @@ public class DriveBase extends SubsystemBase {
         robotPose = pose;
     }
 
+    // This is for when the Questnav is not found.
+    public void forceAddLimelightMeasurement(Pose2d pose) {
+        robotPose = pose;
+    }
 
-    // AddVisionUpdate
-    public void addVisionMeasurement(Pose2d pose, double timestampSeconds) {
+    //
+    public void addLimelightMeasurement(Pose2d pose, double timestampSeconds) {
+        // TODO: All the stuff below this
         // Use the visionBuffer
         // Truncate vision buffer
         // Append current vision measurement
@@ -293,7 +291,8 @@ public class DriveBase extends SubsystemBase {
         // Remove any vision poses the break the laws of physics
 
         // Basic vision update that just sets the pose, this is good enough for testing if it is working
-        this.limelightOffsetPose = pose.minus(this.robotPose);
+        this.limelightPoseEstimate = pose;
+        SmartDashboard.putString("Limelight Pose", this.limelightPoseEstimate.toString());
     }
 
     public double getAngleToAim(Pose2d targetPose) {
@@ -414,8 +413,9 @@ public class DriveBase extends SubsystemBase {
         return new Pose2d(targetPose.getX() + xVelocityOffset, targetPose.getY() + yVelocityOffset, targetPose.getRotation());
     }
 
+    // Get the distance in meters between the current robot position and the target position
     public double getDistFromRobot(Pose2d targetPose) {
-        Pose2d currentPose = getODPose();
+        Pose2d currentPose = getODPose(); // TODO: Change this to the vision pose estimate
     
         double deltaX = targetPose.getX() - currentPose.getX();
         double deltaY = targetPose.getY() - currentPose.getY();
@@ -438,8 +438,7 @@ public class DriveBase extends SubsystemBase {
      * If this field display is not needed it can be commented out and just use the SDS Telemetry.
      */
     @SuppressWarnings("rawtypes")
-    private void updateModulePoses(CommandSwerveDrivetrain sdsDriveBase)
-    {
+    private void updateModulePoses(CommandSwerveDrivetrain sdsDriveBase) {
         Pose2d modulePoses[] = new Pose2d[4], robotPose = getODPose();
 
         Translation2d moduleLocations[] = sdsDriveBase.getModuleLocations(), moduleLocation;

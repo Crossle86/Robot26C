@@ -2,8 +2,6 @@ package Team4450.Robot26.utility;
 
 import java.util.ArrayList;
 
-import com.ctre.phoenix6.swerve.SwerveModule;
-
 import Team4450.Robot26.subsystems.SDS.CommandSwerveDrivetrain;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -197,10 +195,10 @@ public class AdvantageScope {
 
     /**
      * Sends the swerve module poses to AdvantageScope
-     * @param sdsDriveBase The SDS drive base class.
+     * @param sdsDrivebase The SDS drivebase class.
      */
-    public void setSwerveModules(CommandSwerveDrivetrain sdsDriveBase) {
-        SwerveModuleState moduleStates[] = sdsDriveBase.getState().ModuleStates;
+    public void setSwerveModules(CommandSwerveDrivetrain sdsDrivebase) {
+        SwerveModuleState moduleStates[] = sdsDrivebase.getState().ModuleStates;
         
         swerveStates[0] = moduleStates[0].angle.getDegrees();
         swerveStates[1] = moduleStates[0].speedMetersPerSecond;

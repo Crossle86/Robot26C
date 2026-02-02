@@ -21,8 +21,9 @@ import edu.wpi.first.wpilibj.DriverStation;
  * <p>It is advised to statically import this class (or one of its inner classes) wherever the
  * constants are needed, to reduce verbosity.
  */
-public final class Constants {
-	public static String		PROGRAM_NAME = "ORF26-01.09.26";
+public final class Constants
+{
+	public static String		PROGRAM_NAME = "ORF26-01.30.26";
 
 	public static Robot			robot;
 
@@ -41,31 +42,48 @@ public final class Constants {
 
 	// Non-drive base motor controller port assignments
     
-    // Pneumatic valve controller port assignments.
-    
-    // CAMERAS 
-
-    // The names of the cameras in the PhotonVision software
-
-    // Limelight Constants:
-	public static final double DONT_SEE_TAG_WAIT_TIME = 1;
-	public static final double POSE_VALIDATION_TIME = 0.3;
-
+    // Misc port assignments.
     public static final int     REV_PDB = 20;
     public static final int     CTRE_CANDLE = 21;
     public static final int     PIGEON_ID = 1;
+
+    // Canivore device name or "rio" if no canivore.
+    public static String        CANIVORE_NAME = "canivore";
 	
 	// GamePad port assignments.
 	public static final int		DRIVER_PAD = 0, UTILITY_PAD = 1;
 
-    public static String LIMELIGHT_LEFT = "limelight-left";
-    // Add limelight left offset
-    public static String LIMELIGHT_RIGHT = "limelight-right";
-    // Add limelight right offset
+    public static int KRAKEN_X60_MAX_THEORETICAL_RPM = 6000;
+    public static int KRAKEN_X44_MAX_THEORETICAL_RPM = 7530;
 
-    public static double ROBOT_TO_QUEST_X = 0.304;
-    public static double ROBOT_TO_QUEST_Y = 0;
-    public static double ROBOT_TO_QUEST_Z = 0;
+    public static int INTAKE_MOTOR_PIVIT_CAN_ID = -1;
+    public static int INTAKE_MOTOR_LEFT_CAN_ID = -1;
+    public static int INTAKE_MOTOR_RIGHT_CAN_ID = -1;
+
+    // The intake gear ratio it 1 to 1
+    public static int INTAKE_GEAR_RATIO = 1 / 1;
+    // I was told that the gear box on the Kraken is a 1:30
+    public static int INTAKE_PIVIT_GEAR_RATIO = (30 / 1) / (32 / 16);
+
+    public static int INTAKE_MAX_THEORETICAL_RPM = KRAKEN_X44_MAX_THEORETICAL_RPM / INTAKE_GEAR_RATIO;
+    public static int INTAKE_MAX_THEORETICAL_PIVIT_RPM = KRAKEN_X60_MAX_THEORETICAL_RPM / INTAKE_PIVIT_GEAR_RATIO;
+
+    // The format of this value is in rotations of the pivit motor
+    public static int INTAKE_PIVIT_MOTOR_POSITION_UP = 0;
+    // This is an assumed value and not exact
+    public static double INTAKE_PIVIT_POSITION_DOWN_DEGREES = 100;
+    // The format of this value is in rotations of the pivit motor
+    public static double INTAKE_PIVIT_MOTOR_POSITION_DOWN = (INTAKE_PIVIT_POSITION_DOWN_DEGREES / 360) * INTAKE_PIVIT_GEAR_RATIO;
+    // The format of this value is in rotations of the pivit motor
+    public static double INTAKE_PIVIT_TOLERENCE_MOTOR_ROTATIONS = 0.5;
+    public static double INTAKE_PIVIL_TOLERENCE_DEGREES = 360 * (INTAKE_PIVIT_TOLERENCE_MOTOR_ROTATIONS / INTAKE_PIVIT_GEAR_RATIO);
+
+    public static String LIMELIGHT_LEFT = "limelight-left";
+    public static String LIMELIGHT_RIGHT = "limelight-right";
+
+    public static Pose3d ROBOT_TO_QUEST = new Pose3d(0.304, 0, 0, new Rotation3d(Math.toRadians(0), Math.toRadians(32), Math.toRadians(0)));
+    public static Pose3d ROBOT_TO_LIMELIGHT_LEFT = new Pose3d(0, 0.282, 0, Rotation3d.kZero);
+    public static Pose3d ROBOT_TO_LIMELIGHT_RIGHT = new Pose3d(0, -0.282, 0, Rotation3d.kZero);
 
     public static int VISION_BUFFER_SIZE = 1;
 
@@ -113,15 +131,12 @@ public final class Constants {
     public static double ROBOT_STRAFE_KI_MAX = 0;
     public static double ROBOT_STRAFE_KD = 0;
 
-    public static double ROBOT_HEADING_KP = 0.04;
+    public static double ROBOT_HEADING_KP = 0.02;
     public static double ROBOT_HEADING_KI = 0;
     public static double ROBOT_HEADING_KI_MAX = 0;
-    public static double ROBOT_HEADING_KD = 0;
-    // public static double ROBOT_HEADING_KF = 0;
+    public static double ROBOT_HEADING_KD = 0.001;
     public static double ROBOT_HEADING_TOLERANCE_DEG = 0.5;
-    // public static double ROBOT_HEADING_MAX_OUTPUT = 1;
-
-    public static double FLYWHEEL_MAX_THEORETICAL_RPM = 4000;
+    public static boolean ROBOT_HEADING_PID_TOGGLE = true;
 
     // Interpolation table
     public static double[] FLYWHEEL_SPEED_TABLE = {0.57, 0.595, 0.69, 0.715, 0.73, 0.82, 0.86};
@@ -143,15 +158,43 @@ public final class Constants {
     public static final boolean TURRET_ACCELERATION_ENABLED = true;
     // When within this many degrees, snap to setpoint and zero velocity.
     public static final double TURRET_ANGLE_TOLERANCE_DEG = 0.5;
-    // -------------------------------------------------------------------------------------
 
-    // Flywheel tuning defaults
-    // Default target RPM for flywheel (used as a manual override/starting value)
-    public static final double FLYWHEEL_DEFAULT_TARGET_RPM = 1845.0;
-    // Default flywheel acceleration in RPM per second (used for ramping if implemented)
-    public static final double FLYWHEEL_DEFAULT_ACCEL_RPMS = 20000.0;
-    // Default open-loop start percent for flywheel when controlled by code only (0.0 - 1.0)
-    public static final double FLYWHEEL_DEFAULT_START_PERCENT = 0.5; // 50% output
+    // -------------------------------------------------------------------------------------
+    // Flywheel tuning defaults (used as Shuffleboard starting values)
+    
+    // Default target RPM
+    public static final double FLYWHEEL_TARGET_RPM = 2650.0;
+
+    // CAN ID for flywheel TalonFX
+    public static final int FLYWHEEL_MOTOR_CAN_ID = 10;
+
+    // Closed-loop slot selection
+    public static final int FLYWHEEL_PID_SLOT = 0;
+    // Motor inversion handled in Talon configuration (not math)
+    public static final boolean FLYWHEEL_INVERTED = true;
+
+    // ---------------- Feedforward (Talon internal) ----------------
+    // Units: Volts, Volts/(rps), Volts/(rps/s)
+    public static final double FLYWHEEL_kS = 0.1;
+    public static final double FLYWHEEL_kV = 0.11;
+    public static final double FLYWHEEL_kA = 0.05;
+    // ---------------- PID (Velocity) ----------------
+    public static final double FLYWHEEL_kP = 0.45;
+    public static final double FLYWHEEL_kI = 0.25;
+    public static final double FLYWHEEL_kD = 0.0;
+
+    // ---------------- Motion Magic Velocity ----------------
+    // These only affect ramp rate
+    public static final boolean FLYWHEEL_USE_MOTION_MAGIC = true;
+
+    public static final double FLYWHEEL_MOTION_ACCEL_RPMS = 5000.0; // RPM/s
+    public static final double FLYWHEEL_MOTION_JERK = 0.0;
+
+    // ---------------- Telemetry / limits ----------------
+    public static final double FLYWHEEL_MAX_THEORETICAL_RPM = 4000.0;
+
+    // Flip this to 1 or -1 if direction is wrong
+    public static final int FLYWHEEL_DIRECTION = -1;
 
     // What is the LCD
 	// LCD display line number constants showing class where the line is set.
@@ -175,7 +218,7 @@ public final class Constants {
         public static double kMaxAngularRate = RotationsPerSecond.of(1.0).in(RadiansPerSecond); // 1 rotation per second max angular velocity
 
         // Velocity dead bands applied in SDS code. Times max speed.
-        public static final double  DRIVE_DEADBAND = 0.01, ROTATION_DEADBAND = 0.1;
+        public static final double  DRIVE_DEADBAND = 0.01, ROTATION_DEADBAND = 0.01;
 
         // Factors used to reduce robot max speed to levels desired for lab/demo operation.
         // The split below matches the rotation speed to drive speed. Needs to be tuned for
@@ -195,8 +238,4 @@ public final class Constants {
         public static final Pose2d	DEFAULT_STARTING_POSE = new Pose2d(0, 0, Rotation2d.kZero);
         public static final Pose3d	DEFAULT_STARTING_POSE_3D = new Pose3d(0, 0, 0, Rotation3d.kZero);
     }
-
-  //-------------------- No student code above this line ------------------------------------------------------
-
-}
-;
+};

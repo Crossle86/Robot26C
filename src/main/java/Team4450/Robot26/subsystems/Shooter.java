@@ -6,7 +6,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
-public class Turret extends SubsystemBase {
+public class Shooter extends SubsystemBase {
     // Requested target (degrees) — set by callers
     private double requestedAngleDeg = 0.0;
     // Commanded angle we are currently outputting to hardware (degrees)
@@ -21,15 +21,23 @@ public class Turret extends SubsystemBase {
     private boolean turretAccelEnabled = TURRET_ACCELERATION_ENABLED;
     // Flywheel runtime tunables (RPM and RPM/s units on dashboard)
     // (flywheel is currently controlled by TestSubsystem; no dashboard-driven flywheel tunables here)
+    
+    private final Drivebase drivebase;
 
-    private final DriveBase driveBase;
+    // Constants for launch calculations
+    private static final double GRAVITY = 9.81;
+    private static final double DESIRED_MAX_HEIGHT = 2.5; // meters (8.2 feet)
+    private static final double GOAL_HEIGHT = 1.8288; // meters (6 feet)
+    private static final double FLYWHEEL_HEIGHT = 0.5334; // meters (21 inches)
+    private static final double CONVERSION_FACTOR_MPS_TO_RPM = 10000 / 47.93;
+    private static final double MOTOR_TICKS_PER_REVOLUTION = 2048; // for Falcon 500
 
-    public Turret(DriveBase driveBase) {
+    public Shooter(Drivebase drivebase) {
         // initialize commanded angle to whatever a reasonable default is
         this.commandedAngleDeg = 0.0;
         this.requestedAngleDeg = 0.0;
         this.commandedAngularVelocity = 0.0;
-        this.driveBase = driveBase;
+        this.drivebase = drivebase;
 
         // Publish tuning values to SmartDashboard so they can be changed while testing.
         // Publish both RPM-based and internal values for clarity/editing.
@@ -47,6 +55,7 @@ public class Turret extends SubsystemBase {
     double hudTurretMaxAccelRpms = SmartDashboard.getNumber("Turret/MaxAccelerationRPMperSec", TURRET_DEFAULT_MAX_ACCEL_RPMS);
     turretAccelEnabled = SmartDashboard.getBoolean("Turret/AccelEnabled", turretAccelEnabled);
 
+
     // Convert RPM-based dashboard values to internal deg/sec units: 1 RPM = 360 deg / 60 sec = 6 deg/sec
     turretMaxVelDegPerSec = hudTurretMaxVelRpm * 6.0;
     turretMaxAccelDegPerSec2 = hudTurretMaxAccelRpms * 6.0;
@@ -57,10 +66,32 @@ public class Turret extends SubsystemBase {
         updateMotion(ROBOT_PERIOD_SEC);
     }
 
+    public void updateLaunchValues(){
+        // Calculate distance to goal
+        double xDiff = getGoalPose().getX() - drivebase.getPose().getX();
+        double yDiff = getGoalPose().getY() - drivebase.getPose().getY();
+        double distToGoal = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+        double desiredHeight = distToGoal > 6 ? DESIRED_MAX_HEIGHT : distToGoal / 6;
+
+        // Calculate time of flight and velocity vectors
+        double verticalVel = Math.sqrt(2 * GRAVITY * (desiredHeight - FLYWHEEL_HEIGHT));
+        double estimatedTime = (verticalVel + Math.sqrt(verticalVel - 2 * (GRAVITY) * (GOAL_HEIGHT - FLYWHEEL_HEIGHT))) / GRAVITY;
+        double horizonalVel = distToGoal / estimatedTime;
+
+        // Calculate hood angle and angle to face goal
+        double hoodAngle = Math.atan(verticalVel / horizonalVel);
+        double angleToFaceGoal = Math.atan2(yDiff, xDiff);
+        
+        // Calculate flywheel RPM needed
+        double initialVel = Math.sqrt(Math.pow((verticalVel), 2) * Math.pow((horizonalVel), 2));
+        double targetRpm = initialVel * CONVERSION_FACTOR_MPS_TO_RPM;
+        //targetVelocity = (rpm / 60) * Constants.Swerve.MOTOR_TICKS_PER_REVOLUTION; I think this is only needed for FTC
+        }
+
     public void aimTurret(Pose2d robotPosition) {
         setTargetAngle(getAngleToFaceGoalDegrees(robotPosition));
 
-        double targetFlywheelSpeed = getNeededFlywheelSpeed(driveBase.getDistFromRobot(driveBase.getPoseToAim(getGoalPose())));
+        double targetFlywheelSpeed = getNeededFlywheelSpeed(drivebase.getDistFromRobot(drivebase.getPoseToAim(getGoalPose())));
         setFlywheelSpeed(targetFlywheelSpeed);
     }
 

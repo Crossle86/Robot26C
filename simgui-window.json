@@ -29,8 +29,8 @@
       "Size": "254,221"
     },
     "###/Pose": {
-      "Collapsed": "0",
-      "Pos": "376,116",
+      "Collapsed": "1",
+      "Pos": "317,124",
       "Size": "1496,755"
     },
     "###/SmartDashboard/Auto Chooser": {
@@ -71,11 +71,11 @@
     "###Joysticks": {
       "Collapsed": "0",
       "Pos": "281,710",
-      "Size": "1156,316"
+      "Size": "1156,91"
     },
     "###NetworkTables": {
       "Collapsed": "0",
-      "Pos": "522,52",
+      "Pos": "522,51",
       "Size": "1199,891"
     },
     "###NetworkTables Info": {
@@ -101,7 +101,7 @@
     "###Timing": {
       "Collapsed": "0",
       "Pos": "1,190",
-      "Size": "197,331"
+      "Size": "197,302"
     },
     "Debug##Default": {
       "Collapsed": "0",

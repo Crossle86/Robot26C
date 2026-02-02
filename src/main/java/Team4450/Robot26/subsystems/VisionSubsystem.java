@@ -31,16 +31,28 @@ public class VisionSubsystem extends SubsystemBase {
     // LimelightHelpers.SetRobotOrientation(robotYawInDegrees,0,0,0,0,0))
     // SetRobotOrientation assumes a centered (see the map generator) or blue-corner origin. CCW-positive, 0 degrees -> facing red alliance wall in FRC.
     //
-    DriveBase drivebase;
-    boolean enabled = false;
+    Drivebase drivebase;
+    boolean enabled = true;
     int i = 0;
 
-    public VisionSubsystem(DriveBase drivebase) {
+    public VisionSubsystem(Drivebase drivebase) {
 
         // Need to add a null check for the cameras
         this.drivebase = drivebase;
         RobotOrientation rO = drivebase.getRobotOrientation(); // IDK if RobotOrientation works correctly, look there to see
-        
+                                                               
+
+        // Quick notes on the rotation 3d getX() return the roll in radians, getY() return the pitch in radians, getZ() return the yaw in radians
+
+        // Set the Limelight offsets from the center of the robot
+        LimelightHelpers.setCameraPose_RobotSpace(Constants.LIMELIGHT_LEFT, Constants.ROBOT_TO_LIMELIGHT_LEFT.getX(), Constants.ROBOT_TO_LIMELIGHT_LEFT.getY(),
+                Constants.ROBOT_TO_LIMELIGHT_LEFT.getZ(), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_LEFT.getRotation().getX()),
+                Math.toRadians(Constants.ROBOT_TO_LIMELIGHT_LEFT.getRotation().getY()), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_LEFT.getRotation().getZ()));
+
+        LimelightHelpers.setCameraPose_RobotSpace(Constants.LIMELIGHT_RIGHT, Constants.ROBOT_TO_LIMELIGHT_RIGHT.getX(), Constants.ROBOT_TO_LIMELIGHT_RIGHT.getY(),
+                Constants.ROBOT_TO_LIMELIGHT_RIGHT.getZ(), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_RIGHT.getRotation().getX()),
+                Math.toRadians(Constants.ROBOT_TO_LIMELIGHT_RIGHT.getRotation().getY()), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_RIGHT.getRotation().getZ()));
+
         zeroLimelightIMU(rO);
 
     }
@@ -106,7 +118,8 @@ public class VisionSubsystem extends SubsystemBase {
 
                 if (useLeftLimelight) {
                     Util.consoleLog("Add left vision");
-                    drivebase.addVisionMeasurement(left_mt2.pose, left_mt2.timestampSeconds);
+                    Util.consoleLog(left_mt2.pose.toString());
+                    drivebase.addLimelightMeasurement(left_mt2.pose, left_mt2.timestampSeconds);
                 }
             }
             if (Math.abs(left_mt2.pose.getX()) > Constants.FIELD_MAX_X) {
@@ -122,8 +135,7 @@ public class VisionSubsystem extends SubsystemBase {
             }
 
             if (useLeftLimelight) {
-                Util.consoleLog("Add left vision");
-                drivebase.addVisionMeasurement(left_mt2.pose, left_mt2.timestampSeconds);
+                drivebase.addLimelightMeasurement(left_mt2.pose, left_mt2.timestampSeconds);
             }
         }
 
@@ -145,7 +157,7 @@ public class VisionSubsystem extends SubsystemBase {
             }
 
             if (useRightLimelight) {
-                drivebase.addVisionMeasurement(right_mt2.pose, right_mt2.timestampSeconds);
+                drivebase.addLimelightMeasurement(right_mt2.pose, right_mt2.timestampSeconds);
             }
         }
 
