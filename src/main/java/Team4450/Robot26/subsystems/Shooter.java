@@ -1,28 +1,66 @@
 package Team4450.Robot26.subsystems;
 
 import static Team4450.Robot26.Constants.*;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+import Team4450.Robot26.Constants;
+import Team4450.Robot26.RobotContainer;
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
+import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
+
+import Team4450.Robot26.utility.LinkedMotors;
 
 public class Shooter extends SubsystemBase {
-    // Requested target (degrees) — set by callers
-    private double requestedAngleDeg = 0.0;
-    // Commanded angle we are currently outputting to hardware (degrees)
-    private double commandedAngleDeg = 0.0;
-    // Current commanded angular velocity (deg/sec)
-    private double commandedAngularVelocity = 0.0;
-    // Tunable motion parameters (initialized from Constants but editable at runtime)
-    // Internals use deg/sec and deg/sec^2. For convenience we expose RPM units on the dashboard
-    // and convert to degrees internally (1 RPM = 6 deg/sec).
-    private double turretMaxVelDegPerSec = TURRET_MAX_VELOCITY_DEG_PER_SEC;
-    private double turretMaxAccelDegPerSec2 = TURRET_MAX_ACCELERATION_DEG_PER_SEC2;
-    private boolean turretAccelEnabled = TURRET_ACCELERATION_ENABLED;
-    // Flywheel runtime tunables (RPM and RPM/s units on dashboard)
-    // (flywheel is currently controlled by TestSubsystem; no dashboard-driven flywheel tunables here)
-    
-    private final Drivebase drivebase;
+    // This motor is a Falcon 500
+    private final TalonFX flywheelMotorTopLeft = new TalonFX(Constants.FLYWHEEL_MOTOR_TOP_LEFT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+    // This motor is a Falcon 500
+    private final TalonFX flywheelMotorTopRight = new TalonFX(Constants.FLYWHEEL_MOTOR_TOP_RIGHT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+    // This motor is a Falcon 500
+    private final TalonFX flywheelMotorBottomLeft = new TalonFX(Constants.FLYWHEEL_MOTOR_BOTTOM_LEFT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+    // This motor is Falcon 500
+    private final TalonFX flywheelMotorBottomRight = new TalonFX(Constants.FLYWHEEL_MOTOR_BOTTOM_RIGHT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+    private final LinkedMotors flywheelMotors = new LinkedMotors(flywheelMotorTopLeft, flywheelMotorTopRight, flywheelMotorBottomLeft, flywheelMotorBottomRight);
+    // This motor is a Kraken x60
+    private final TalonFX hoodLeft = new TalonFX(Constants.HOOD_MOTOR_LEFT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+    // This motor is a Kraken x60
+    private final TalonFX hoodRight = new TalonFX(Constants.HOOD_MOTOR_RIGHT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+    // This motor is a Kraken x44
+    private final TalonFX infeedMotorLeft = new TalonFX(Constants.INFEED_MOTOR_LEFT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+    // This motor is a Kraken x44
+    private final TalonFX infeedMotorRight = new TalonFX(Constants.INFEED_MOTOR_RIGHT_CAN_ID, new CANBus(Constants.CANIVORE_NAME));
+
+    private boolean canFlywheel;
+    private boolean canHood;
+    private boolean canInfeed;
+
+    private boolean runInfeed;
+
+    // The format of this value is in rotations of the pivit motor
+    private double hoodMotorPosition;
+    private double hoodTargetMotorPosition;
+    // Current RPM of the flywheel
+    private double flywheelCurrentRPM;
+    // Target RPM of the flywheel
+    private double flywheelTargetRPM;
+    // Current Error of the flywheel
+    private double flywheelError;
+    //Hood Rotation Offset
+    private double hoodRotationOffset;
+
+    DigitalInput beamBreak;
 
     // Constants for launch calculations
     private static final double GRAVITY = 9.81;
@@ -30,86 +68,284 @@ public class Shooter extends SubsystemBase {
     private static final double GOAL_HEIGHT = 1.8288; // meters (6 feet)
     private static final double FLYWHEEL_HEIGHT = 0.5334; // meters (21 inches)
     private static final double CONVERSION_FACTOR_MPS_TO_RPM = 10000 / 47.93;
-    private static final double MOTOR_TICKS_PER_REVOLUTION = 2048; // for Falcon 500
+
+    private double targetRPM = 0.0;
+    private double currentRPM = 0.0;
+
+    private final double maxRpm = Constants.FLYWHEEL_MAX_THEORETICAL_RPM;
+
+    private boolean flywheelEnabled = false; // Button-controlled enable
+
+    // Shuffleboard cached values
+    private boolean sdInit = false;
+
+    private boolean disableAutomaticFlywheelUpdate = false;
+
+    private double sd_kP, sd_kI, sd_kD;
+    private double sd_kS, sd_kV, sd_kA;
+
+    private Drivebase drivebase;
 
     public Shooter(Drivebase drivebase) {
-        // initialize commanded angle to whatever a reasonable default is
-        this.commandedAngleDeg = 0.0;
-        this.requestedAngleDeg = 0.0;
-        this.commandedAngularVelocity = 0.0;
         this.drivebase = drivebase;
 
-        // Publish tuning values to SmartDashboard so they can be changed while testing.
-        // Publish both RPM-based and internal values for clarity/editing.
-        SmartDashboard.putNumber("Turret/MaxVelocityRPM", TURRET_DEFAULT_MAX_VELOCITY_RPM);
-        SmartDashboard.putNumber("Turret/MaxAccelerationRPMperSec", TURRET_DEFAULT_MAX_ACCEL_RPMS);
-        SmartDashboard.putBoolean("Turret/AccelEnabled", turretAccelEnabled);
+        this.canFlywheel = flywheelMotorTopLeft.isConnected() && flywheelMotorTopRight.isConnected() && flywheelMotorBottomLeft.isConnected() && flywheelMotorBottomRight.isConnected();
+        this.canHood = hoodLeft.isConnected() && hoodRight.isConnected();
+        this.canInfeed = infeedMotorLeft.isConnected() && infeedMotorRight.isConnected();
 
-    // Flywheel is controlled by TestSubsystem (code-controlled). No dashboard defaults here.
+        this.hoodMotorPosition = 0;
+
+        this.flywheelCurrentRPM = 0;
+        this.flywheelTargetRPM = 0;
+        this.flywheelError = 0;
+
+        this.hoodRotationOffset = this.hoodLeft.getPosition(true).getValueAsDouble();
+
+        beamBreak = new DigitalInput(Constants.SHOOTER_UPPER_BEAM_BREAK_PORT);
+
+        for (int i = 0; i < flywheelMotors.getTotalMotors(); i++) {
+            TalonFXConfiguration cfg = new TalonFXConfiguration();
+
+            // Neutral + inversion
+            cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+            cfg.CurrentLimits = new CurrentLimitsConfigs().withSupplyCurrentLimit(Constants.SHOOTER_FLYWHEEL_CURRENT_LIMIT);
+
+            cfg.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+
+            // Slot 0 PID
+            cfg.Slot0.kP = Constants.FLYWHEEL_kP;
+            cfg.Slot0.kI = Constants.FLYWHEEL_kI;
+            cfg.Slot0.kD = Constants.FLYWHEEL_kD;
+
+            // Slot 0 Feedforward (Talon internal)
+            cfg.Slot0.kS = Constants.FLYWHEEL_kS;
+            cfg.Slot0.kV = Constants.FLYWHEEL_kV;
+            cfg.Slot0.kA = Constants.FLYWHEEL_kA;
+
+            // Motion Magic acceleration limits
+            cfg.MotionMagic.MotionMagicAcceleration =
+                Constants.FLYWHEEL_MOTION_ACCEL_RPMS / 60.0;
+            cfg.MotionMagic.MotionMagicJerk =
+                Constants.FLYWHEEL_MOTION_JERK;
+
+            if (flywheelMotors.getMotorByIndex(i) != null) {
+                flywheelMotors.getMotorByIndex(i).getConfigurator().apply(cfg);
+            }
+        }
+
+        TalonFXConfiguration infeedCFG = new TalonFXConfiguration();
+
+        // Neutral + inversion
+        infeedCFG.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        infeedCFG.CurrentLimits = new CurrentLimitsConfigs().withSupplyCurrentLimit(Constants.SHOOTER_INFEED_CURRENT_LIMIT);
+        infeedCFG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+
+        this.infeedMotorLeft.getConfigurator().apply(infeedCFG);
+        this.infeedMotorRight.getConfigurator().apply(infeedCFG);
+
+        TalonFXConfiguration hoodCFG = new TalonFXConfiguration();
+
+        // Neutral + inversion
+        hoodCFG.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        hoodCFG.CurrentLimits = new CurrentLimitsConfigs().withSupplyCurrentLimit(Constants.SHOOTER_HOOD_CURRENT_LIMIT);
+        hoodCFG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+
+        // Slot 0 PID
+        hoodCFG.Slot0.kP = 0.00002;
+        hoodCFG.Slot0.kI = 0;
+        hoodCFG.Slot0.kD = 0;
+
+        // Slot 0 Feedforward (Talon internal)
+        hoodCFG.Slot0.kS = 0; 
+        hoodCFG.Slot0.kV = 0;
+        hoodCFG.Slot0.kA = 0;
+
+        // Motion Magic acceleration limits
+        hoodCFG.MotionMagic.MotionMagicAcceleration = 2;
+        hoodCFG.MotionMagic.MotionMagicJerk = 0;
+
+        this.hoodLeft.getConfigurator().apply(hoodCFG);
+        this.hoodRight.getConfigurator().apply(hoodCFG);
+
+        this.hoodMotorPosition = 0;
+        this.hoodLeft.setPosition(this.hoodMotorPosition);
+
+        SmartDashboard.putNumber("Hood Target Position", 0);
+
+        SmartDashboard.putNumber("Flywheel/TargetRPM", Constants.FLYWHEEL_TARGET_RPM);
+
+        SmartDashboard.putNumber("Flywheel/kP", Constants.FLYWHEEL_kP);
+        SmartDashboard.putNumber("Flywheel/kI", Constants.FLYWHEEL_kI);
+        SmartDashboard.putNumber("Flywheel/kD", Constants.FLYWHEEL_kD);
+
+        SmartDashboard.putNumber("Flywheel/kS", Constants.FLYWHEEL_kS);
+        SmartDashboard.putNumber("Flywheel/kV", Constants.FLYWHEEL_kV);
+        SmartDashboard.putNumber("Flywheel/kA", Constants.FLYWHEEL_kA);
+        SmartDashboard.putNumber("Hood Position", hoodMotorPosition);
+
+        sd_kP = Constants.FLYWHEEL_kP;
+        sd_kI = Constants.FLYWHEEL_kI;
+        sd_kD = Constants.FLYWHEEL_kD;
+
+        sd_kS = Constants.FLYWHEEL_kS;
+        sd_kV = Constants.FLYWHEEL_kV;
+        sd_kA = Constants.FLYWHEEL_kA;
+
+        sdInit = true;
+
+        SmartDashboard.putNumber("Hood Power", 0.05);
+        SmartDashboard.putNumber("Infeed Target RPM", Constants.INFEED_DEFAULT_TARGET_RPM);
+        SmartDashboard.putBoolean("disableAutomaticFlywheelUpdate", this.disableAutomaticFlywheelUpdate);
     }
 
     @Override
     public void periodic() {
-    // Read potentially-updated tuning values from SmartDashboard (RPM-based entries).
-    double hudTurretMaxVelRpm = SmartDashboard.getNumber("Turret/MaxVelocityRPM", TURRET_DEFAULT_MAX_VELOCITY_RPM);
-    double hudTurretMaxAccelRpms = SmartDashboard.getNumber("Turret/MaxAccelerationRPMperSec", TURRET_DEFAULT_MAX_ACCEL_RPMS);
-    turretAccelEnabled = SmartDashboard.getBoolean("Turret/AccelEnabled", turretAccelEnabled);
-
-
-    // Convert RPM-based dashboard values to internal deg/sec units: 1 RPM = 360 deg / 60 sec = 6 deg/sec
-    turretMaxVelDegPerSec = hudTurretMaxVelRpm * 6.0;
-    turretMaxAccelDegPerSec2 = hudTurretMaxAccelRpms * 6.0;
-
-    // Flywheel is controlled by TestSubsystem via Constants; no dashboard reads here.
-
-        // Update the acceleration-limited motion profile for the turret every robot cycle.
-        updateMotion(ROBOT_PERIOD_SEC);
-    }
-
-    public void updateLaunchValues(){
-        // Calculate distance to goal
-        double xDiff = getGoalPose().getX() - drivebase.getPose().getX();
-        double yDiff = getGoalPose().getY() - drivebase.getPose().getY();
-        double distToGoal = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
-        double desiredHeight = distToGoal > 6 ? DESIRED_MAX_HEIGHT : distToGoal / 6;
-
-        // Calculate time of flight and velocity vectors
-        double verticalVel = Math.sqrt(2 * GRAVITY * (desiredHeight - FLYWHEEL_HEIGHT));
-        double estimatedTime = (verticalVel + Math.sqrt(verticalVel - 2 * (GRAVITY) * (GOAL_HEIGHT - FLYWHEEL_HEIGHT))) / GRAVITY;
-        double horizonalVel = distToGoal / estimatedTime;
-
-        // Calculate hood angle and angle to face goal
-        double hoodAngle = Math.atan(verticalVel / horizonalVel);
-        double angleToFaceGoal = Math.atan2(yDiff, xDiff);
+        // Flywheel is controlled by TestSubsystem via Constants; no dashboard reads here.
         
-        // Calculate flywheel RPM needed
-        double initialVel = Math.sqrt(Math.pow((verticalVel), 2) * Math.pow((horizonalVel), 2));
-        double targetRpm = initialVel * CONVERSION_FACTOR_MPS_TO_RPM;
-        //targetVelocity = (rpm / 60) * Constants.Swerve.MOTOR_TICKS_PER_REVOLUTION; I think this is only needed for FTC
+        // This line should be all that is needed when the flywheel should be spun up
+        updateLaunchValues(true);
+
+        // Update the beam break sensors
+        SmartDashboard.putBoolean("Beam Break", beamBreak.get());
+
+        hoodMotorPosition = hoodLeft.getPosition().getValueAsDouble();
+
+        updateHoodPosition(SmartDashboard.getNumber("Hood Target Position", this.hoodMotorPosition));
+
+        SmartDashboard.putNumber("Hood Angle", getHoodMotorAngleRadians());
+        SmartDashboard.putNumber("Hood Motor Position", getHoodMotorPosition());
+
+        double measuredRps =
+                flywheelMotorTopLeft.getRotorVelocity()
+                        .refresh()
+                        .getValueAsDouble();
+
+        currentRPM = measuredRps * 60.0;
+        SmartDashboard.putNumber("Flywheel measured RPM", currentRPM);
+
+        // -------- Shuffleboard tuning --------
+
+        targetRPM = SmartDashboard.getNumber(
+                "Flywheel/TargetRPM",
+                Constants.FLYWHEEL_TARGET_RPM);
+
+        double kP = SmartDashboard.getNumber("Flywheel/kP", sd_kP);
+        double kI = SmartDashboard.getNumber("Flywheel/kI", sd_kI);
+        double kD = SmartDashboard.getNumber("Flywheel/kD", sd_kD);
+
+        double kS = SmartDashboard.getNumber("Flywheel/kS", sd_kS);
+        double kV = SmartDashboard.getNumber("Flywheel/kV", sd_kV);
+        double kA = SmartDashboard.getNumber("Flywheel/kA", sd_kA);
+
+        // Apply only if changed
+        if (!sdInit ||
+                kP != sd_kP || kI != sd_kI || kD != sd_kD ||
+                kS != sd_kS || kV != sd_kV || kA != sd_kA) {
+
+
+            for (int i = 0; i < flywheelMotors.getTotalMotors(); i++) {
+                TalonFXConfiguration cfg = new TalonFXConfiguration();
+
+                cfg.CurrentLimits = new CurrentLimitsConfigs().withSupplyCurrentLimit(Constants.SHOOTER_FLYWHEEL_CURRENT_LIMIT);
+
+                // Neutral + inversion
+                cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+                cfg.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+
+                // Slot 0 PID
+                cfg.Slot0.kP = Constants.FLYWHEEL_kP;
+                cfg.Slot0.kI = Constants.FLYWHEEL_kI;
+                cfg.Slot0.kD = Constants.FLYWHEEL_kD;
+
+                // Slot 0 Feedforward (Talon internal)
+                cfg.Slot0.kS = Constants.FLYWHEEL_kS;
+                cfg.Slot0.kV = Constants.FLYWHEEL_kV;
+                cfg.Slot0.kA = Constants.FLYWHEEL_kA;
+
+                // Motion Magic acceleration limits
+                cfg.MotionMagic.MotionMagicAcceleration =
+                    Constants.FLYWHEEL_MOTION_ACCEL_RPMS / 60.0;
+                cfg.MotionMagic.MotionMagicJerk =
+                    Constants.FLYWHEEL_MOTION_JERK;
+
+                flywheelMotors.getMotorByIndex(i).getConfigurator().apply(cfg);
+            }
+            
+            sd_kP = kP;
+            sd_kI = kI;
+            sd_kD = kD;
+
+            sd_kS = kS;
+            sd_kV = kV;
+            sd_kA = kA;
+
+            sdInit = true;
         }
 
-    public void aimTurret(Pose2d robotPosition) {
-        setTargetAngle(getAngleToFaceGoalDegrees(robotPosition));
+        double targetRPS;
 
-        double targetFlywheelSpeed = getNeededFlywheelSpeed(drivebase.getDistFromRobot(drivebase.getPoseToAim(getGoalPose())));
-        setFlywheelSpeed(targetFlywheelSpeed);
-    }
+        if (flywheelEnabled && canFlywheel) {
+            targetRPS = targetRPM / 60.0;
+            MotionMagicVelocityVoltage req =
+                    new MotionMagicVelocityVoltage(targetRPS)
+                            .withSlot(Constants.FLYWHEEL_PID_SLOT);
 
-    public void setTargetAngle(double angleInSomething) {
-        // Public API: callers request a new target angle in degrees. We store it and
-        // the periodic loop will ramp the commanded output toward this target using
-        // the acceleration/velocity limits in Constants.
-        this.requestedAngleDeg = angleInSomething;
-    }
+            this.flywheelMotorTopLeft.setControl(req);
+            this.flywheelMotorTopRight.setControl(new Follower(flywheelMotorTopLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+            this.flywheelMotorBottomLeft.setControl(new Follower(flywheelMotorTopLeft.getDeviceID(), MotorAlignmentValue.Aligned));
+            this.flywheelMotorBottomRight.setControl(new Follower(flywheelMotorTopLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+        } else {
+            targetRPS = 0;
+            CoastOut req =
+                    new CoastOut();
 
-    public void setFlywheelSpeed(double targetFlywheelSpeed) {
-        // For future integration: apply a flywheel RPM setpoint. Currently a stub.
-        applyFlywheelRpm(targetFlywheelSpeed);
-    }
+            this.flywheelMotorTopLeft.setControl(req);
+            this.flywheelMotorTopRight.setControl(new Follower(flywheelMotorTopLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+            this.flywheelMotorBottomLeft.setControl(new Follower(flywheelMotorTopLeft.getDeviceID(), MotorAlignmentValue.Aligned));
+            this.flywheelMotorBottomRight.setControl(new Follower(flywheelMotorTopLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+        }
 
-    public double getNeededFlywheelSpeed(double distToGoal) {
-        double targetVelocity = interpolateFlywheelSpeedByDistance(distToGoal);
-        return targetVelocity * FLYWHEEL_MAX_THEORETICAL_RPM; // Normalize the target velocity by the max theoretical
+        double percent = currentRPM / maxRpm;
+
+        SmartDashboard.putNumber(
+                "Flywheel/MeasuredRPM",
+                currentRPM);
+
+        SmartDashboard.putNumber(
+                "Flywheel/PercentOutApprox",
+                percent);
+
+        SmartDashboard.putNumber("Infeed RPM", getInfeedRPM());
+        
+        if (this.runInfeed) {
+            setInfeedRPM(SmartDashboard.getNumber("Infeed Target RPM", Constants.INFEED_DEFAULT_TARGET_RPM));
+        }
+
+        SmartDashboard.putNumber("Flywheel Current Draw", getFlywheelCurrent());
+        SmartDashboard.putNumber("Infeed Current Draw", getInfeedCurrent());
+   }
+
+    public void updateLaunchValues(boolean interpolate){
+        // Calculate distance to goal & diffs
+        double xDiff = Math.abs(getGoalPose().getX() - drivebase.getPose().getX());
+
+        double yDiff = Math.abs(getGoalPose().getY() - drivebase.getPose().getY());
+        double distToGoal = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+
+        SmartDashboard.putNumber("RobotLaunchX", drivebase.getPose().getX());
+        SmartDashboard.putNumber("RobotLaunchY", drivebase.getPose().getY());
+        SmartDashboard.putString("Goal Pose", getGoalPose().toString());
+        SmartDashboard.putString("Diffs", String.format("%.2f, %.2f", xDiff, yDiff));
+        SmartDashboard.putNumber("Robot Distance", distToGoal);
+        
+        if (interpolate) {
+            if (!SmartDashboard.getBoolean("disableAutomaticFlywheelUpdate", this.disableAutomaticFlywheelUpdate)) {
+                SmartDashboard.putNumber("Flywheel/TargetRPM", interpolateFlywheelSpeedByDistance(distToGoal));
+            }
+            setHoodMotorPosition(interpolateHoodByDistance(distToGoal));
+        }   
     }
 
     public Pose2d getGoalPose() {
@@ -125,36 +361,32 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getAngleToFaceGoalDegrees(Pose2d robotPosition) {
-        // If blue side
-        double xDiff = 0;
-        double yDiff = 0;
-        if (alliance == Alliance.Blue) {
-            xDiff = HUB_BLUE_WELDED_POSE.getX() - robotPosition.getX();
-            yDiff = HUB_BLUE_WELDED_POSE.getY() + robotPosition.getY();
-        // If red side
-        } else if (alliance == Alliance.Red) {
-            xDiff = HUB_RED_WELDED_POSE.getX() - robotPosition.getX();
-            yDiff = HUB_RED_WELDED_POSE.getY() - robotPosition.getY();
-        } else {
-            // Error
-        }
-        // Simplify this stuff
-        return (Math.toDegrees(Math.atan(yDiff / xDiff)) + robotPosition.getRotation().getDegrees() - 180);
+        // Find the difference betweeen the robot and the goal
+        double xDiff = getGoalPose().getX() - RobotContainer.drivebase.getPose().getX();
+        double yDiff = getGoalPose().getY() - RobotContainer.drivebase.getPose().getY();
+
+        // use atan2 to get teh correct angle to face goal & convert to degrees
+        double angleToFaceGoal = Math.toDegrees(Math.atan(yDiff / xDiff));
+
+        return (angleToFaceGoal - robotPosition.getRotation().getDegrees());
     }
 
+    // This method sets the lower and higher points to interpolate between 
+    // Based on the hardcoded flywheel speed & distance tables and the robots current distance away from the goal
     public double interpolateFlywheelSpeedByDistance(double distToGoal) {
+        
         double lowerPoint = FLYWHEEL_SPEED_DISTANCE_TABLE[0];
-
         int lowerPointIndex = 0;
 
         double higherPoint = FLYWHEEL_SPEED_DISTANCE_TABLE[FLYWHEEL_SPEED_DISTANCE_TABLE.length - 1];
         int higherPointIndex = FLYWHEEL_SPEED_DISTANCE_TABLE.length - 1;
 
         double currentDistance;
+
         for (int i = FLYWHEEL_SPEED_DISTANCE_TABLE.length - 2; i > 0; i--){
-            currentDistance = FLYWHEEL_SPEED_TABLE[i];
+            currentDistance = FLYWHEEL_SPEED_DISTANCE_TABLE[i];
             if(currentDistance > distToGoal){
-                if (currentDistance < higherPoint) {
+                if (currentDistance <= higherPoint) {
                     higherPoint = currentDistance;
                     higherPointIndex = i;
                 }
@@ -173,84 +405,242 @@ public class Shooter extends SubsystemBase {
         return linearInterpolate(lowerSpeed, higherSpeed, (distToGoal - lowerPoint) / (higherPoint - lowerPoint));
     }
 
+    public double interpolateHoodByDistance(double distToGoal) {
+        
+        double lowerPoint = FLYWHEEL_SPEED_DISTANCE_TABLE[0];
+        int lowerPointIndex = 0;
+
+        double higherPoint = FLYWHEEL_SPEED_DISTANCE_TABLE[FLYWHEEL_SPEED_DISTANCE_TABLE.length - 1];
+        int higherPointIndex = FLYWHEEL_SPEED_DISTANCE_TABLE.length - 1;
+
+        double currentDistance;
+
+        for (int i = FLYWHEEL_SPEED_DISTANCE_TABLE.length - 2; i > 0; i--){
+            currentDistance = HOOD_ARC_TABLE[i];
+            if(currentDistance > distToGoal){
+                if (currentDistance <= higherPoint) {
+                    higherPoint = currentDistance;
+                    higherPointIndex = i;
+                }
+            }else if (currentDistance < distToGoal){
+                if (currentDistance >= lowerPoint) {
+                    lowerPoint = currentDistance;
+                    lowerPointIndex = i;
+                }
+            }else if (currentDistance == distToGoal){
+                return HOOD_ARC_TABLE[i];
+            }
+        }
+        double lowerSpeed = HOOD_ARC_TABLE[lowerPointIndex];
+        double higherSpeed = HOOD_ARC_TABLE[higherPointIndex];
+
+        return linearInterpolate(lowerSpeed, higherSpeed, (distToGoal - lowerPoint) / (higherPoint - lowerPoint));
+    }
+
     public static double linearInterpolate(double point1, double point2, double percentageSplit) {
         return point1 + ((point2 - point1) * percentageSplit);
     }
 
-    // --- Motion profiling helpers ----------------------------------------------------
-    private void updateMotion(double dt) {
-        if (dt <= 0) return;
+    
+    // Linear interpolate the hood angle between zero and one with the motor rotations of up and down on the hood
+    public double hoodAngleToMotorPosition(double hoodAngle) {
+        return ((hoodAngle - Constants.HOOD_DOWN_ANGLE_DEGREES) / Constants.HOOD_GEAR_RATIO);
+    }
 
-        if (!turretAccelEnabled) {
-            // No smoothing; jump straight to requested setpoint.
-            commandedAngleDeg = requestedAngleDeg;
-            commandedAngularVelocity = 0.0;
-            applyHardwareAngle(commandedAngleDeg);
-            return;
+    public double motorPositionToHoodAngle(double motorPosition) {
+        return ((motorPosition * Constants.HOOD_GEAR_RATIO * 360) + Constants.HOOD_DOWN_ANGLE_DEGREES);
+    }
+
+    public void updateHoodPosition(double pos) {
+        MotionMagicVoltage req = new MotionMagicVoltage(pos);
+
+        this.hoodLeft.setControl(req);
+        this.hoodRight.setControl(new Follower(this.hoodLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+    }
+
+    public void startFlywheel() {
+        this.flywheelEnabled = true;
+    }
+
+    public void stopFlywheel() {
+        this.flywheelEnabled = false;
+    }
+
+    public double getFlywheelRPM () {
+        return flywheelCurrentRPM;
+    }
+        public double getFlywheelTatgetRPM () {
+        return flywheelTargetRPM;
+    }
+        public double getFlywheelError () {
+        return flywheelError;
+    }
+
+    public double getFlywheelCurrent() {
+        return flywheelMotorBottomLeft.getSupplyCurrent(true).getValueAsDouble() + flywheelMotorBottomRight.getSupplyCurrent(true).getValueAsDouble() + flywheelMotorTopLeft.getSupplyCurrent(true).getValueAsDouble() + flywheelMotorTopRight.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getFlywheelTopLeftMotorCurrent() {
+        return flywheelMotorTopLeft.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getFlywheelTopRightMotorCurrent() {
+        return flywheelMotorTopRight.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getFlywheelBottomLeftMotorCurrent() {
+        return flywheelMotorBottomLeft.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getFlywheelBottomRightMotorCurrent() {
+        return flywheelMotorBottomRight.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public void startInfeed() {
+        if (canInfeed) {
+            this.runInfeed = true;
+        }
+    }
+
+    public void testInfeed() {
+        if (canInfeed) {
+            this.infeedMotorLeft.set(0.05);
+            this.infeedMotorRight.setControl(new Follower(this.infeedMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+        }
+    }
+
+    public void stopInfeed() {
+        if (canInfeed) {
+            this.runInfeed = false;
+            this.infeedMotorLeft.set(0);
+            this.infeedMotorRight.setControl(new Follower(this.infeedMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+        }
+    }
+
+    public double getInfeedRPM() {
+        return infeedMotorLeft.getRotorVelocity(true).getValueAsDouble() * 60;
+    }
+
+    public double getInfeedCurrent() {
+        return infeedMotorLeft.getSupplyCurrent(true).getValueAsDouble() + infeedMotorRight.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getTransferLeftMotorCurrent() {
+        return infeedMotorLeft.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getTransferRightMotorCurrent() {
+        return infeedMotorRight.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    // The position input is between 0 and 1 with 0 being up and 1 being down
+    public void setHoodMotorPosition(double position) {
+        hoodTargetMotorPosition = position;
+    }
+
+    public double getHoodMotorAngleRadians() {
+        return (hoodLeft.getPosition(true).getValueAsDouble() - this.hoodRotationOffset);
+    }
+
+    public double getHoodMotorPosition() {
+        return hoodLeft.getPosition().getValueAsDouble();
+    }
+
+    public double getHoodCurrent() {
+        return hoodLeft.getSupplyCurrent(true).getValueAsDouble() + hoodRight.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getHoodLeftMotorCurrent() {
+        return hoodLeft.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    public double getHoodRightMotorCurrent() {
+        return hoodRight.getSupplyCurrent(true).getValueAsDouble();
+    }
+
+    /**
+     * Calculates the RPM for the flywheel based on the robot's pose and the hub's pose.
+     * @param robotPose The current pose of the robot (x, y, rotation).
+     * @param hubPose The pose of the hub (x, y).
+     * @param hoodAngle The constant hood angle in radians.
+     * @return The calculated RPM value.
+     */
+    public double calculateRPM(Pose2d robotPose, Pose2d hubPose, double hoodAngle) {
+        double deltaX = hubPose.getX() - robotPose.getX();
+        double deltaY = hubPose.getY() - robotPose.getY();
+        double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        // Calculate the required velocity to reach the hub
+        double velocity = Math.sqrt((GRAVITY * distance * distance) / 
+            (2 * (distance * Math.tan(hoodAngle) - (GOAL_HEIGHT - FLYWHEEL_HEIGHT))));
+
+        // Convert velocity to RPM
+        double rpmMath = velocity * CONVERSION_FACTOR_MPS_TO_RPM;
+        return rpmMath;
+    }
+
+    /**
+     * Interpolates RPM values based on predefined data points.
+     * @param distance The distance between the robot and the hub.
+     * @return The interpolated RPM value.
+     */
+    public double interpolateRPM(double distance) {
+        // Example interpolation table (distance in meters, RPM values)
+        double[][] rpmTable = {
+            {1.0, 2000},
+            {2.0, 2500},
+            {3.0, 3000},
+            {4.0, 3500},
+            {5.0, 4000}
+        };
+
+        // Linear interpolation logic
+        for (int i = 0; i < rpmTable.length - 1; i++) {
+            if (distance >= rpmTable[i][0] && distance <= rpmTable[i + 1][0]) {
+                double x1 = rpmTable[i][0];
+                double y1 = rpmTable[i][1];
+                double x2 = rpmTable[i + 1][0];
+                double y2 = rpmTable[i + 1][1];
+
+                // Linear interpolation formula
+                return y1 + (distance - x1) * (y2 - y1) / (x2 - x1);
+            }
         }
 
-        // Compute shortest-path angular error in degrees [-180,180)
-        double error = wrapAngleDeg(requestedAngleDeg - commandedAngleDeg);
+        // Return the closest value if out of bounds
+        if (distance < rpmTable[0][0]) return rpmTable[0][1];
+        if (distance > rpmTable[rpmTable.length - 1][0]) return rpmTable[rpmTable.length - 1][1];
 
-        // Desired velocity to close the error in one iteration (may be large); clamp to max velocity
-    double desiredVel = clamp(error / dt, -turretMaxVelDegPerSec, turretMaxVelDegPerSec);
-
-        // Limit acceleration: compute allowable change in velocity
-    double maxDeltaV = turretMaxAccelDegPerSec2 * dt;
-        double deltaV = desiredVel - commandedAngularVelocity;
-        if (deltaV > maxDeltaV) deltaV = maxDeltaV;
-        if (deltaV < -maxDeltaV) deltaV = -maxDeltaV;
-
-        commandedAngularVelocity += deltaV;
-
-        // Integrate angle
-        commandedAngleDeg += commandedAngularVelocity * dt;
-
-        // If we're very close to target, snap to it and zero velocity to avoid jitter.
-        if (Math.abs(wrapAngleDeg(requestedAngleDeg - commandedAngleDeg)) <= TURRET_ANGLE_TOLERANCE_DEG) {
-            commandedAngleDeg = requestedAngleDeg;
-            commandedAngularVelocity = 0.0;
-        }
-
-        applyHardwareAngle(commandedAngleDeg);
+        return 0; // Default case (should not occur)
     }
 
-    // Convert a raw angle to the range [-180, 180)
-    private static double wrapAngleDeg(double angle) {
-        angle = angle % 360.0;
-        if (angle < -180.0) angle += 360.0;
-        if (angle >= 180.0) angle -= 360.0;
-        return angle;
+    /**
+     * Calculates the final RPM by averaging RPMmath and interpolated RPM.
+     * @param robotPose The current pose of the robot (x, y, rotation).
+     * @param hubPose The pose of the hub (x, y).
+     * @param hoodAngle The constant hood angle in radians.
+     * @return The final RPM value.
+     */
+    public double calculateFinalRPM(Pose2d robotPose, Pose2d hubPose, double hoodAngle) {
+        double deltaX = hubPose.getX() - robotPose.getX();
+        double deltaY = hubPose.getY() - robotPose.getY();
+        double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        SmartDashboard.putNumber("Robot Distance", distance);
+
+        double rpmMath = calculateRPM(robotPose, hubPose, hoodAngle);
+        double interpolatedRPM = interpolateRPM(distance);
+
+        return (rpmMath + interpolatedRPM) / 2.0;
     }
 
-    private static double clamp(double v, double lo, double hi) {
-        if (v < lo) return lo;
-        if (v > hi) return hi;
-        return v;
+    public void setInfeedRPM(double targetRPM) {
+        double currentRPM = getInfeedRPM();
+        double error = targetRPM - currentRPM;
+        double adjustment = Constants.INFEED_kP * error; // Adjustment to approach target
+        double newRPM = targetRPM + adjustment; // Adjust current RPM towards target
+        //this.infeedMotorLeft.set(newRPM / Constants.FLYWHEEL_MAX_THEORETICAL_RPM);
+        this.infeedMotorLeft.set(0.8);
+        this.infeedMotorRight.setControl(new Follower(this.infeedMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
     }
-
-    // This method should perform the actual hardware call to move the turret to the
-    // specified angle (in degrees). Replace the body with your motor controller call
-    // converting degrees to whatever encoder/motor units you use.
-    private void applyHardwareAngle(double angleDeg) {
-        // Example placeholder:
-        // turretMotor.setPositionDegrees(angleDeg);
-        // For now, just leave a debug comment or log if needed.
-        // System.out.println("Turret angle command: " + angleDeg);
-    }
-
-    // Flywheel hardware application stub. This will ramp target RPM with accel if you
-    // want to implement a flywheel ramp. Right now it simply calls the placeholder.
-    private void applyFlywheelRpm(double rpm) {
-        // Replace with your motor controller speed command, e.g.:
-        // flywheelMotor.setVelocityRpm(rpm);
-    }
-
-    // Public setters/getters for programmatic tuning if you prefer not to use SmartDashboard
-    public void setTurretMaxVelocityRpm(double rpm) { turretMaxVelDegPerSec = rpm * 6.0; SmartDashboard.putNumber("Turret/MaxVelocityRPM", rpm); }
-    public void setTurretMaxAccelerationRpms(double rpms) { turretMaxAccelDegPerSec2 = rpms * 6.0; SmartDashboard.putNumber("Turret/MaxAccelerationRPMperSec", rpms); }
-    public double getTurretMaxVelocityRpm() { return turretMaxVelDegPerSec / 6.0; }
-    public double getTurretMaxAccelerationRpms() { return turretMaxAccelDegPerSec2 / 6.0; }
-
-    // Flywheel dashboard/setters removed; flywheel is code-controlled in TestSubsystem.
 }

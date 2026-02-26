@@ -3,6 +3,7 @@ package Team4450.Robot26.subsystems;
 import Team4450.Lib.Util;
 import Team4450.Robot26.Constants;
 import Team4450.Robot26.utility.RobotOrientation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.lang.Math;
 
@@ -44,9 +45,9 @@ public class VisionSubsystem extends SubsystemBase {
         // Quick notes on the rotation 3d getX() return the roll in radians, getY() return the pitch in radians, getZ() return the yaw in radians
 
         // Set the Limelight offsets from the center of the robot
-        LimelightHelpers.setCameraPose_RobotSpace(Constants.LIMELIGHT_LEFT, Constants.ROBOT_TO_LIMELIGHT_LEFT.getX(), Constants.ROBOT_TO_LIMELIGHT_LEFT.getY(),
-                Constants.ROBOT_TO_LIMELIGHT_LEFT.getZ(), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_LEFT.getRotation().getX()),
-                Math.toRadians(Constants.ROBOT_TO_LIMELIGHT_LEFT.getRotation().getY()), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_LEFT.getRotation().getZ()));
+        LimelightHelpers.setCameraPose_RobotSpace(Constants.LIMELIGHT_FRONT, Constants.ROBOT_TO_LIMELIGHT_FRONT.getX(), Constants.ROBOT_TO_LIMELIGHT_FRONT.getY(),
+                Constants.ROBOT_TO_LIMELIGHT_FRONT.getZ(), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_FRONT.getRotation().getX()),
+                Math.toRadians(Constants.ROBOT_TO_LIMELIGHT_FRONT.getRotation().getY()), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_FRONT.getRotation().getZ()));
 
         LimelightHelpers.setCameraPose_RobotSpace(Constants.LIMELIGHT_RIGHT, Constants.ROBOT_TO_LIMELIGHT_RIGHT.getX(), Constants.ROBOT_TO_LIMELIGHT_RIGHT.getY(),
                 Constants.ROBOT_TO_LIMELIGHT_RIGHT.getZ(), Math.toDegrees(Constants.ROBOT_TO_LIMELIGHT_RIGHT.getRotation().getX()),
@@ -58,12 +59,12 @@ public class VisionSubsystem extends SubsystemBase {
 
     public void enableInternalIMU() {
         RobotOrientation rO = drivebase.getRobotOrientation(); // IDK if RobotOrientation works correctly, look there to see
-        Util.consoleLog("Init Limelight Internal IMU Left");
-        LimelightHelpers.SetRobotOrientation(Constants.LIMELIGHT_LEFT, rO.yaw, rO.yawRate, rO.pitch, rO.pitchRate, rO.roll, rO.rollRate);
+        Util.consoleLog("Init Limelight Internal IMU Front");
+        LimelightHelpers.SetRobotOrientation(Constants.LIMELIGHT_FRONT, rO.yaw, rO.yawRate, rO.pitch, rO.pitchRate, rO.roll, rO.rollRate);
         Util.consoleLog("Init Limelight Internal IMU Right");
         LimelightHelpers.SetRobotOrientation(Constants.LIMELIGHT_RIGHT, rO.yaw, rO.yawRate, rO.pitch, rO.pitchRate, rO.roll, rO.rollRate);
         // IMU mode 2 uses to Limelight 4 internal IMU
-        LimelightHelpers.SetIMUMode(Constants.LIMELIGHT_LEFT, 2);
+        LimelightHelpers.SetIMUMode(Constants.LIMELIGHT_FRONT, 2);
         LimelightHelpers.SetIMUMode(Constants.LIMELIGHT_RIGHT, 2);
 
     }
@@ -78,9 +79,12 @@ public class VisionSubsystem extends SubsystemBase {
         boolean useRightLimelight = true;
         // Get latest pose estimage from each camera
         
-        LimelightHelpers.PoseEstimate left_mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(Constants.LIMELIGHT_LEFT);
-        // Pose2d left_mt2 = LimelightHelpers.getBotPose2d_wpiBlue(Constants.LIMELIGHT_LEFT);
-        LimelightHelpers.PoseEstimate right_mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(Constants.LIMELIGHT_RIGHT);
+        // LimelightHelpers.PoseEstimate front_mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(Constants.LIMELIGHT_FRONT);
+        LimelightHelpers.PoseEstimate front_mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue(Constants.LIMELIGHT_FRONT);
+        // Pose2d front_mt2 = LimelightHelpers.getBotPose2d_wpiBlue(Constants.LIMELIGHT_LEFT);
+        //
+        // LimelightHelpers.PoseEstimate right_mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(Constants.LIMELIGHT_RIGHT);
+        LimelightHelpers.PoseEstimate right_mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue(Constants.LIMELIGHT_RIGHT);
         // Pose2d right_mt2 = LimelightHelpers.getBotPose2d_wpiBlue(Constants.LIMELIGHT_RIGHT);
 
         // If the angular velocity is greater than 720 degrees per second ignore the vision update
@@ -94,22 +98,34 @@ public class VisionSubsystem extends SubsystemBase {
 
         // IDK what units the getX() return
         // IDK what units the getY() return
-        
-        if (left_mt2 != null) {
-            if (Math.abs(left_mt2.pose.getX()) > Constants.FIELD_MAX_X) {
+
+        if (front_mt2 != null) {
+            if (Math.abs(front_mt2.pose.getX()) > Constants.FIELD_MAX_X) {
                 useLeftLimelight = false;
             }
 
-            if (Math.abs(left_mt2.pose.getY()) > Constants.FIELD_MAX_Y) {
+            if (Math.abs(front_mt2.pose.getY()) > Constants.FIELD_MAX_Y) {
                 useLeftLimelight = false;
             }
 
-            if (left_mt2.rawFiducials.length < 1) {
+            double numTags = front_mt2.rawFiducials.length;
+            for (LimelightHelpers.RawFiducial tag : front_mt2.rawFiducials) {
+                if (Math.abs(tag.txnc) > 20) { // TODO: Convert 20 to a constants value
+                    numTags--;
+                } else if (Math.abs(tag.tync) > 20) {
+                    numTags--;
+                }
+            }
+
+            if (numTags < 2) {
                 useLeftLimelight = false;
             }
 
             if (useLeftLimelight) {
-                drivebase.addLimelightMeasurement(left_mt2.pose, left_mt2.timestampSeconds);
+                SmartDashboard.putBoolean("Send Front Limelight info", true);
+                drivebase.addLimelightMeasurement(front_mt2.pose, front_mt2.timestampSeconds);
+            } else {
+                SmartDashboard.putBoolean("Send Front Limelight info", false);
             }
         }
 
@@ -122,19 +138,35 @@ public class VisionSubsystem extends SubsystemBase {
                 useRightLimelight = false;
             }
 
-            if (right_mt2.rawFiducials.length < 1) {
+            double numTags = right_mt2.rawFiducials.length;
+            for (LimelightHelpers.RawFiducial tag : right_mt2.rawFiducials) {
+                if (Math.abs(tag.txnc) > 20) { // TODO: Convert 20 to a constants value
+                    numTags--;
+                } else if (Math.abs(tag.tync) > 20) {
+                    numTags--;
+                }
+            }
+
+            if (numTags < 2) {
+                useRightLimelight = false;
+            }
+
+            if (right_mt2.rawFiducials.length < 2) {
                 useRightLimelight = false;
             }
 
             if (useRightLimelight) {
+                SmartDashboard.putBoolean("Send Right Limelight info", true);
                 drivebase.addLimelightMeasurement(right_mt2.pose, right_mt2.timestampSeconds);
+            } else {
+                SmartDashboard.putBoolean("Send Right Limelight info", false);
             }
         }
 
         // Get rid of the result if the yaw of the resulting pose is impossible
         //
         // I think the yaw is between -180 and 180 instead of 0 - 360
-        // if (left_mt2.pose.getRotation().getDegrees() < 0 || left_mt2.pose.getRotation().getDegrees() > 360 || right_mt2.pose.getRotation().getDegrees() < 0 || right_mt2.pose.getRotation().getDegrees() > 360) {
+        // if (front_mt2.pose.getRotation().getDegrees() < 0 || front_mt2.pose.getRotation().getDegrees() > 360 || right_mt2.pose.getRotation().getDegrees() < 0 || right_mt2.pose.getRotation().getDegrees() > 360) {
         //     return;
         // }
         
@@ -142,10 +174,10 @@ public class VisionSubsystem extends SubsystemBase {
 
     public void zeroLimelightIMU(RobotOrientation rO) { // Set to IMU mode 0 to diable the internal limelight IMU
         // Setting to IMU mode 1 will use the setRobotOrientation to set the internal Limelight IMU
-        LimelightHelpers.SetIMUMode(Constants.LIMELIGHT_LEFT, 1);
+        LimelightHelpers.SetIMUMode(Constants.LIMELIGHT_FRONT, 1);
         LimelightHelpers.SetIMUMode(Constants.LIMELIGHT_RIGHT, 1);
         
-        LimelightHelpers.SetRobotOrientation(Constants.LIMELIGHT_LEFT, rO.yaw, rO.yawRate, rO.pitch, rO.pitchRate, rO.roll, rO.rollRate);
+        LimelightHelpers.SetRobotOrientation(Constants.LIMELIGHT_FRONT, rO.yaw, rO.yawRate, rO.pitch, rO.pitchRate, rO.roll, rO.rollRate);
         LimelightHelpers.SetRobotOrientation(Constants.LIMELIGHT_RIGHT, rO.yaw, rO.yawRate, rO.pitch, rO.pitchRate, rO.roll, rO.rollRate);
     }
 }
