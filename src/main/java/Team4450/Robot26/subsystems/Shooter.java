@@ -151,7 +151,6 @@ public class Shooter extends SubsystemBase {
 
         hoodMotorPosition = hoodLeft.getPosition().getValueAsDouble();
 
-        SmartDashboard.putBoolean("Will Enter Trench", drivebase.willEnterTrench());
         if (drivebase.willEnterTrench()) {
             updateHoodPosition(0);
         } else if (this.enabledHood) {

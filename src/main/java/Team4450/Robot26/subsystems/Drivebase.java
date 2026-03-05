@@ -179,11 +179,13 @@ public class Drivebase extends SubsystemBase {
         }
         SmartDashboard.putNumber("DriveBase Current", getDrivetrainCurrent());
 
+        SmartDashboard.putBoolean("Will Enter Trench", willEnterTrench());
+
         if (willEnterTrench() && !slowFortrench){
-            toggleSlowMode();
+            slowMode = true;
             slowFortrench = true;
         } else if (!willEnterTrench() && slowFortrench){
-            toggleSlowMode();
+            slowMode = false;
         }
 
 
@@ -518,9 +520,9 @@ public class Drivebase extends SubsystemBase {
     }
 
     public boolean willCrashTrench() {
-       double velocityX = driveField.VelocityX;
-       double velocityY = driveField.VelocityY;
-       double bufferTime = 0.05;
+       double velocityX = fieldRelativeVelocityX;
+       double velocityY = fieldRelativeVelocityY;
+       double bufferTime = 0.50;
 
        double predictionX = robotPose.getX() + (velocityX * bufferTime);
        double predictionY = robotPose.getY() + (velocityY * bufferTime);
@@ -553,9 +555,9 @@ public class Drivebase extends SubsystemBase {
     }
 
     public boolean willEnterTrench() {
-       double velocityX = driveField.VelocityX;
-       double velocityY = driveField.VelocityY;
-       double bufferTime = 0.05;
+       double velocityX = fieldRelativeVelocityX;
+       double velocityY = fieldRelativeVelocityY;
+       double bufferTime = 0.50;
 
        double predictionX = robotPose.getX() + (velocityX * bufferTime);
        double predictionY = robotPose.getY() + (velocityY * bufferTime);

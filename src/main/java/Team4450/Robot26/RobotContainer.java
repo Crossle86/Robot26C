@@ -200,7 +200,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("startShooter", new StartShoot(shooter, hopper));
     NamedCommands.registerCommand("stopShooter", new StopShoot(shooter, hopper));
     NamedCommands.registerCommand("end", new StopAuto(drivebase));
-    NamedCommands.registerCommand("Shoot", new Shoot(shooter, hopper));
+    NamedCommands.registerCommand("Shoot", new Shoot(drivebase, shooter, hopper));
     NamedCommands.registerCommand("StopShooting", new StopShooting(shooter, hopper));
 
     // Set the default drive command. This command will be scheduled automatically
