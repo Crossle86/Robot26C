@@ -25,7 +25,7 @@ public class Shoot extends Command {
 
     @Override
     public void execute() {
-        if (this.shooter.flywheelAtSpeed() && this.shooter.robotAtTarget() && this.shooter.driverEnabledInfeed) {
+        if (this.shooter.flywheelAtSpeed()) {
             shooter.startInfeed();
             hopper.start();
         } else {

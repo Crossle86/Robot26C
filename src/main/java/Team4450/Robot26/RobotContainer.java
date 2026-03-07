@@ -382,21 +382,17 @@ public class RobotContainer {
         .toggleOnTrue(new InstantCommand(intake::togglePivit));
 
     new Trigger(() -> driverController.getLeftTrigger())
-        // .onTrue(new InstantCommand(shooter::startFlywheel))
-        // .onFalse(new InstantCommand(shooter::stopFlywheel));
         .whileTrue(new Shoot(drivebase, shooter, hopper));
 
     new Trigger(() -> driverController.getRightTrigger())
-        .onTrue(new InstantCommand(shooter::driverToggledInfeed))
-        .onFalse(new InstantCommand(shooter::driverToggledInfeed));
+        .onTrue(new InstantCommand(shooter::startInfeed))
+        .onFalse(new InstantCommand(shooter::stopInfeed));
 
     new Trigger(() -> driverController.getAButton())
-        .onTrue(new InstantCommand(intake::startIntake))
-        .onTrue(new InstantCommand(hopper::startSlow));
+        .onTrue(new InstantCommand(intake::startIntake));
 
     new Trigger(() -> driverController.getBButton())
-        .onTrue(new InstantCommand(intake::stopIntake))
-        .onTrue(new InstantCommand(hopper::stop));
+        .onTrue(new InstantCommand(intake::stopIntake));
 
     new Trigger(() -> driverController.getYButton())
         .onTrue(new InstantCommand(shooter::reverseInfeed))
@@ -405,55 +401,6 @@ public class RobotContainer {
     new Trigger(() -> driverController.getXButton())
         .onTrue(new InstantCommand(drivebase::toggleHubTracking));
 
-    // new Trigger(() -> driverController.getYButton())
-    // .onTrue(new InstantCommand(drivebase::driveToOrigin));
-
-    // Shoot without driver control
-    // new Trigger(() -> driverController.getXButton())
-    // .onTrue(new InstantCommand(drivebase::toggleHubTracking))
-    // .onTrue(new InstantCommand(drivebase::stopHumanDriving))
-    // .onTrue(new InstantCommand(shooter::enableAutomaticFlywheelUpdate))
-    // .onTrue(new InstantCommand(shooter::enabledHood))
-
-    // .whileTrue(new Shoot(shooter, hopper))
-
-    // .onFalse(new InstantCommand(drivebase::toggleHubTracking))
-    // .onFalse(new InstantCommand(drivebase::startHumanDriving))
-    // .onFalse(new InstantCommand(shooter::disableAutomaticFlywheelUpdate))
-    // .onFalse(new InstantCommand(shooter::distableHood));
-
-    // Shoot with driver control
-    // new Trigger(() -> driverController.getXButton())
-    // .onTrue(new InstantCommand(drivebase::toggleHubTracking))
-    // .onTrue(new InstantCommand(shooter::enableAutomaticFlywheelUpdate))
-    // .onTrue(new InstantCommand(shooter::enabledHood))
-
-    // .whileTrue(new Shoot(shooter, hopper))
-
-    // .onFalse(new InstantCommand(drivebase::toggleHubTracking))
-    // .onFalse(new InstantCommand(shooter::disableAutomaticFlywheelUpdate))
-    // .onFalse(new InstantCommand(shooter::distableHood));
-
-    // Ferry from middle
-    // new Trigger(() -> driverController.getXButton())
-    // .onTrue(new InstantCommand(drivebase::toggleHubTracking))
-    // .onTrue(new InstantCommand(shooter::enableAutomaticFlywheelUpdate))
-    // .onTrue(new InstantCommand(shooter::enabledHood))
-    // .onTrue(new InstantCommand(drivebase::driveToNearestOpening))
-
-    // .whileTrue(new Shoot(shooter, hopper))
-
-    // .onFalse(new InstantCommand(drivebase::toggleHubTracking))
-    // .onFalse(new InstantCommand(shooter::disableAutomaticFlywheelUpdate))
-    // .onFalse(new InstantCommand(shooter::distableHood))
-    // . .onFalse(new InstantCommand(drivebase::disableAutoDriving));
-
-    // Prepare for shooting
-    // new Trigger(() -> driverController.getXButton())
-    // .onTrue(new InstantCommand(drivebase::toggleHubTracking))
-    // .onTrue(new InstantCommand(drivebase::toggleSlowMode))
-    // .onTrue(new InstantCommand(shooter::enableAutomaticFlywheelUpdate))
-    // .onTrue(new InstantCommand(shooter::enabledHood));
   }
 
   /**

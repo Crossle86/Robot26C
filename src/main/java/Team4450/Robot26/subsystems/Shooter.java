@@ -644,8 +644,4 @@ public class Shooter extends SubsystemBase {
         this.infeedMotorLeft.getConfigurator().apply(infeedCFG);
         this.infeedMotorRight.getConfigurator().apply(infeedCFG);
     }
-
-    public void driverToggledInfeed() {
-        this.driverEnabledInfeed = !this.driverEnabledInfeed;
-    }
 }
