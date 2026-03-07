@@ -5,13 +5,25 @@
     "data": {
       "commands": [
         {
+          "type": "path",
+          "data": {
+            "pathName": "LS-LD"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "intakeDown"
+          }
+        },
+        {
           "type": "deadline",
           "data": {
             "commands": [
               {
                 "type": "path",
                 "data": {
-                  "pathName": "straight 1 meter and right"
+                  "pathName": "LD-RD#"
                 }
               },
               {
@@ -30,9 +42,15 @@
           }
         },
         {
-          "type": "wait",
+          "type": "named",
           "data": {
-            "waitTime": 1.0
+            "name": "intakeUp"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RD#-Shoot"
           }
         },
         {
@@ -40,15 +58,21 @@
           "data": {
             "commands": [
               {
-                "type": "named",
+                "type": "wait",
                 "data": {
-                  "name": "shoot"
+                  "waitTime": 11.0
                 }
               },
               {
-                "type": "wait",
+                "type": "named",
                 "data": {
-                  "waitTime": 5.0
+                  "name": "enableHubTracking"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "shoot"
                 }
               }
             ]
@@ -64,6 +88,12 @@
           "type": "named",
           "data": {
             "name": "end"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "disableHubTracking"
           }
         }
       ]

@@ -3,20 +3,27 @@ package Team4450.Robot26.commands;
 import edu.wpi.first.wpilibj2.command.Command;
 import Team4450.Robot26.subsystems.Drivebase;
 
-public class StopAuto extends Command {
+public class DisableHubTracking extends Command {
+
   Drivebase drivebase;
 
-  public StopAuto(Drivebase drivebase) {
+  public DisableHubTracking(Drivebase drivebase) {
+
     this.drivebase = drivebase;
+
   }
 
+  @Override
   public void initialize() {
+    drivebase.disableHubTracking();
   }
 
+  @Override
   public void execute() {
-    drivebase.stop();
+    end(false);
   }
 
+  @Override
   public boolean isFinished() {
     return true;
   }

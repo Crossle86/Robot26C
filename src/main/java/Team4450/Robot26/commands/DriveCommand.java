@@ -15,76 +15,81 @@ import static Team4450.Robot26.Constants.*;
 import Team4450.Robot26.utility.ConsoleEveryX;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-public class DriveCommand extends Command 
-{
-    private final Drivebase         drivebase;
+public class DriveCommand extends Command {
+  private final Drivebase drivebase;
 
-    private final DoubleSupplier    throttleSupplier;
-    private final DoubleSupplier    strafeSupplier;
-    private final DoubleSupplier    rotationXSupplier;
-    private final DoubleSupplier    rotationYSupplier;
-    private final XboxController    controller;
+  private final DoubleSupplier throttleSupplier;
+  private final DoubleSupplier strafeSupplier;
+  private final DoubleSupplier rotationXSupplier;
+  private final DoubleSupplier rotationYSupplier;
+  private final XboxController controller;
 
-    public final PIDController     headingPID;
+  public final PIDController headingPID;
 
-    private double delayCounter;
+  private double delayCounter;
 
-    public DriveCommand(Drivebase      driveBase,
-                        DoubleSupplier throttleSupplier,
-                        DoubleSupplier strafeSupplier,
-                        DoubleSupplier rotationXSupplier,
-                        DoubleSupplier rotationYSupplier,
-                        XboxController controller, PIDController headingPID) 
-    {
-        Util.consoleLog();
+  public DriveCommand(Drivebase driveBase,
+      DoubleSupplier throttleSupplier,
+      DoubleSupplier strafeSupplier,
+      DoubleSupplier rotationXSupplier,
+      DoubleSupplier rotationYSupplier,
+      XboxController controller, PIDController headingPID) {
+    Util.consoleLog();
 
-        this.drivebase = driveBase;
-        this.throttleSupplier = throttleSupplier;
-        this.strafeSupplier = strafeSupplier;
-        this.rotationXSupplier = rotationXSupplier;
-        this.rotationYSupplier = rotationYSupplier;
-        this.controller = controller;
-        this.headingPID = headingPID;
-        headingPID.setIntegratorRange(-ROBOT_HEADING_KI_MAX, ROBOT_HEADING_KI_MAX);
-        headingPID.enableContinuousInput(-180, 180);
-        headingPID.setTolerance(ROBOT_HEADING_TOLERANCE_DEG);
+    this.drivebase = driveBase;
+    this.throttleSupplier = throttleSupplier;
+    this.strafeSupplier = strafeSupplier;
+    this.rotationXSupplier = rotationXSupplier;
+    this.rotationYSupplier = rotationYSupplier;
+    this.controller = controller;
+    this.headingPID = headingPID;
+    headingPID.setIntegratorRange(-ROBOT_HEADING_KI_MAX, ROBOT_HEADING_KI_MAX);
+    headingPID.enableContinuousInput(-180, 180);
+    headingPID.setTolerance(ROBOT_HEADING_TOLERANCE_DEG);
 
-        addRequirements(driveBase);
-    }
+    addRequirements(driveBase);
+  }
 
-    @Override
-    public void initialize() {
-        Util.consoleLog();
-    }
+  @Override
+  public void initialize() {
+    Util.consoleLog();
+  }
 
-    @Override
-    public void execute() {
-        // LCD.printLine(2, "rx=%.3f  ry=%.3f  throttle=%.3f  strafe=%.3f  rotX=%.3f rotY=%.3f",
-        //     controller.getRightX(),
-        //     controller.getRightY(),
-        //     throttleSupplier.getAsDouble(),
-        //     strafeSupplier.getAsDouble(),
-        //     rotationXSupplier.getAsDouble(),
-        //     rotationYSupplier.getAsDouble()
-        // );
+  @Override
+  public void execute() {
+    // LCD.printLine(2, "rx=%.3f ry=%.3f throttle=%.3f strafe=%.3f rotX=%.3f
+    // rotY=%.3f",
+    // controller.getRightX(),
+    // controller.getRightY(),
+    // throttleSupplier.getAsDouble(),
+    // strafeSupplier.getAsDouble(),
+    // rotationXSupplier.getAsDouble(),
+    // rotationYSupplier.getAsDouble()
+    // );
 
-        // LCD.printLine(3, "lx=%.3f  ly=%.3f", // yaw=%.3f",
-        //     controller.getLeftX(),
-        //     controller.getLeftY()
-        //     driveBase.getGyroRotation2d().getDegrees(),
-        //     driveBase.getGyroYaw() // rich
-        // );
+    // LCD.printLine(3, "lx=%.3f ly=%.3f", // yaw=%.3f",
+    // controller.getLeftX(),
+    // controller.getLeftY()
+    // driveBase.getGyroRotation2d().getDegrees(),
+    // driveBase.getGyroYaw() // rich
+    // );
 
-        // This is the default command for the Drivebase. When running in autonmous, the auto commands
-        // require Drivebase, which preempts the default Drivebase command. However, if our auto code ends 
-        // before end of auto period, then this drive command resumes and is feeding drivebase during remainder
-        // of auto period. This was not an issue until the joystick drift problems arose, so the resumption of a 
-        // driving command during auto had the robot driving randomly after our auto program completed. The if 
-        // statment below prevents this.
-        
-        if (robot.isAutonomous()) return;
+    // This is the default command for the Drivebase. When running in autonmous, the
+    // auto commands
+    // require Drivebase, which preempts the default Drivebase command. However, if
+    // our auto code ends
+    // before end of auto period, then this drive command resumes and is feeding
+    // drivebase during remainder
+    // of auto period. This was not an issue until the joystick drift problems
+    // arose, so the resumption of a
+    // driving command during auto had the robot driving randomly after our auto
+    // program completed. The if
+    // statment below prevents this.
 
-        drivebase.updateVelocity(Constants.ROBOT_PERIOD_SEC);
+    if (robot.isAutonomous())
+      return;
+
+    drivebase.updateVelocity(Constants.ROBOT_PERIOD_SEC);
 
         if (Constants.HUB_TRACKING) {
         
@@ -132,45 +137,45 @@ public class DriveCommand extends Command
         
         SmartDashboard.putNumber("Target Heading", targetHeading);
 
-        double error = -targetHeading + Math.toDegrees(drivebase.getPose().getRotation().getDegrees());
+      double error = -targetHeading + Math.toDegrees(drivebase.getPose().getRotation().getDegrees());
 
-        SmartDashboard.putNumber("Heading Error", error);
+      SmartDashboard.putNumber("Heading Error", error);
 
-        // Uses a PID and the previous assigned target heading to rotate there
-        double rotation = -headingPID.calculate(-Math.toDegrees(drivebase.getPose().getRotation().getDegrees()), -targetHeading);
-        double throttle = throttleSupplier.getAsDouble();
-        double strafe = strafeSupplier.getAsDouble();
+      // Uses a PID and the previous assigned target heading to rotate there
+      double rotation = -headingPID.calculate(-Math.toDegrees(drivebase.getPose().getRotation().getDegrees()),
+          -targetHeading);
+      double throttle = throttleSupplier.getAsDouble();
+      double strafe = strafeSupplier.getAsDouble();
 
-        throttle = Util.squareInput(throttle);
-        strafe = Util.squareInput(strafe);
-        
-        headingPID.setP(SmartDashboard.getNumber("Heading P", Constants.ROBOT_HEADING_KP));
-        headingPID.setI(SmartDashboard.getNumber("Heading I", Constants.ROBOT_HEADING_KI));
-        headingPID.setD(SmartDashboard.getNumber("Heading D", Constants.ROBOT_HEADING_KD));
+      throttle = Util.squareInput(throttle);
+      strafe = Util.squareInput(strafe);
 
-        drivebase.drive(throttle, strafe, rotation);
+      headingPID.setP(SmartDashboard.getNumber("Heading P", Constants.ROBOT_HEADING_KP));
+      headingPID.setI(SmartDashboard.getNumber("Heading I", Constants.ROBOT_HEADING_KI));
+      headingPID.setD(SmartDashboard.getNumber("Heading D", Constants.ROBOT_HEADING_KD));
 
-        return;
+      drivebase.drive(throttle, strafe, rotation);
+
+      return;
     }
 
-        double rotation = rotationXSupplier.getAsDouble();
-        double throttle = throttleSupplier.getAsDouble();
-        double strafe = strafeSupplier.getAsDouble();
+    double rotation = rotationXSupplier.getAsDouble();
+    double throttle = throttleSupplier.getAsDouble();
+    double strafe = strafeSupplier.getAsDouble();
 
+    // Squaring input is one way to ramp JS inputs to reduce sensitivity.
+    // Please do not square the headingPID
 
-        // Squaring input is one way to ramp JS inputs to reduce sensitivity.
-        // Please do not square the headingPID
-        
-        throttle = Util.squareInput(throttle);
-        strafe = Util.squareInput(strafe);
-        // rotation = Util.squareInput(rotation);
-        // rotation = Math.pow(rotation, 5);
-        //
-        drivebase.drive(throttle, strafe, rotation);
-    }
+    throttle = Util.squareInput(throttle);
+    strafe = Util.squareInput(strafe);
+    // rotation = Util.squareInput(rotation);
+    // rotation = Math.pow(rotation, 5);
+    //
+    drivebase.drive(throttle, strafe, rotation);
+  }
 
-    @Override 
-    public void end(boolean interrupted) {
-        Util.consoleLog("interrupted=%b", interrupted);
-    }
+  @Override
+  public void end(boolean interrupted) {
+    Util.consoleLog("interrupted=%b", interrupted);
+  }
 }

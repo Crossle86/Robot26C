@@ -7,15 +7,15 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Shoot extends Command {
-    private Shooter shooter;
-    private Hopper hopper;
-    private Drivebase drivebase;
+  private Shooter shooter;
+  private Hopper hopper;
+  private Drivebase drivebase;
 
-    public Shoot(Drivebase drivebase, Shooter shooter, Hopper hopper) {
-        this.shooter = shooter;
-        this.hopper = hopper;
-        this.drivebase = drivebase;
-    }
+  public Shoot(Drivebase drivebase, Shooter shooter, Hopper hopper) {
+    this.shooter = shooter;
+    this.hopper = hopper;
+    this.drivebase = drivebase;
+  }
 
     @Override
     public void initialize() {
@@ -33,11 +33,11 @@ public class Shoot extends Command {
         }
     }
 
-    @Override
-    public boolean isFinished() {
-        // We will always force stop the command
-        return false;
-    }
+  @Override
+  public boolean isFinished() {
+    // We will always force stop the command
+    return false;
+  }
 
     @Override
     public void end(boolean interuppted) {
