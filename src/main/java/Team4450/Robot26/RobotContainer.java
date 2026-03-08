@@ -377,8 +377,7 @@ public class RobotContainer {
         .onTrue(new InstantCommand(drivebase::setX));
 
     new Trigger(() -> driverController.getPOV() == 0) // Up D-pad
-        .onTrue(new InstantCommand(shooter::toggleDisableAutomaticDistance))
-        .onTrue(new InstantCommand(intake::stopIntake));
+        .onTrue(new InstantCommand(shooter::toggleDisableAutomaticDistance));
 
     // -------- Utility controller buttons ----------
     //
