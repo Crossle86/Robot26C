@@ -91,8 +91,8 @@ public class DriveCommand extends Command {
 
     drivebase.updateVelocity(Constants.ROBOT_PERIOD_SEC);
 
-        if (Constants.HUB_TRACKING) {
-        
+        if (Constants.HUB_TRACKING && (SmartDashboard.putBoolean("Send Front Limelight info", true) || SmartDashboard.putBoolean("Send Right Limelight info", true))) {
+
         // This finds where the correct hub position is
         Pose2d hubPosition;
         if (alliance == DriverStation.Alliance.Blue) {
