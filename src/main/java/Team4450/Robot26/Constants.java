@@ -281,19 +281,6 @@ public final class Constants {
         public static final String ROBOT_DISTANCE                   = "Robot Distance";
     }
 
-    // What is the LCD
-	// LCD display line number constants showing class where the line is set.
-	public static final int		LCD_1 = 1;	    // Robot, Auto Commands.
-	public static final int		LCD_2 = 2;	    // Swerve Drive command.
-	public static final int		LCD_3 = 3;	    // ShuffleBoard subsystem.
-	public static final int		LCD_4 = 4;	    // ShuffleBoard subsystem.
-	public static final int		LCD_5 = 5;	    // Autonomous commands.
-	public static final int		LCD_6 = 6;	    // ShuffleBoard subsystem.
-	public static final int		LCD_7 = 7;	    // ShuffleBoard subsystem.
-	public static final int		LCD_8 = 8;	    // ShuffleBoard subsystem.
-	public static final int		LCD_9 = 9;	    // ShuffleBoard subsystem.
-	public static final int		LCD_10 = 10;	// ShuffleBoard subsystem.
-
     public static final class DriveConstants {
         // Driving Parameters - These are the maximum capable speeds of the robot.
 

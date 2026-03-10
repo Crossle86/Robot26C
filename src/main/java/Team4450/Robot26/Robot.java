@@ -44,9 +44,6 @@ public class Robot extends TimedRobot {
         try {
             robot = this;   // Stored in Constants.
 
-            LCD.clearAll();
-            LCD.printLine(LCD_1, "Mode: RobotInit");
-
             // Set up our custom logger.
 
             Util.CustomLogger.setup(true);
@@ -177,8 +174,6 @@ public class Robot extends TimedRobot {
     public void disabledInit() {
         Util.consoleLog();
 
-        LCD.printLine(LCD_1, "Mode: Disabled");
-
         // This is here because Pathplanner Autos don't stop the robot when it is disabled.
         //RobotContainer.driveBase.stop(); rich
 
@@ -215,10 +210,6 @@ public class Robot extends TimedRobot {
     @Override
     public void autonomousInit() {
         Util.consoleLog(functionMarker);
-
-        LCD.clearAll();
-
-        LCD.printLine(LCD_1, "Mode: Auto - No Program");
 
         SmartDashboard.putBoolean("Disabled", false);
         SmartDashboard.putBoolean("Auto Mode", true);
@@ -277,11 +268,6 @@ public class Robot extends TimedRobot {
         Util.consoleLog(functionMarker);
 
         robotContainer.getMatchInformation();
-
-        LCD.clearAll();
-
-        LCD.printLine(LCD_1, "Mode: Teleop  All=%s, Start=%d, FMS=%b, msg=%s", alliance.name(), location,
-                DriverStation.isFMSAttached(), gameMessage);
 
         SmartDashboard.putBoolean("Disabled", false);
         SmartDashboard.putBoolean("Teleop Mode", true);

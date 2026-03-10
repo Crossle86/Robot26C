@@ -22,7 +22,7 @@ import Team4450.Robot26.commands.DriveCommand;
 import Team4450.Robot26.subsystems.SDS.CommandSwerveDrivetrain;
 import Team4450.Robot26.subsystems.SDS.Telemetry;
 import Team4450.Robot26.subsystems.SDS.TunerConstants;
-import Team4450.Robot26.utility.AdvantageScope;
+// import Team4450.Robot26.utility.AdvantageScope;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -151,7 +151,7 @@ public class Drivebase extends SubsystemBase {
       driveField.ForwardPerspective = ForwardPerspectiveValue.BlueAlliance;
 
     // Register for SDS telemetry.
-    sdsDrivebase.registerTelemetry(logger::telemeterize);
+    // sdsDrivebase.registerTelemetry(logger::telemeterize);
 
     updateDS();
   }
@@ -163,9 +163,9 @@ public class Drivebase extends SubsystemBase {
     sdsDrivebase.periodic();
 
     // update 3d simulation: look in AdvantageScope.java for more
-    AdvantageScope.getInstance().setRobotPose(getPose());
-    AdvantageScope.getInstance().update();
-    AdvantageScope.getInstance().setSwerveModules(sdsDrivebase);
+    // AdvantageScope.getInstance().setRobotPose(getPose());
+    // AdvantageScope.getInstance().update();
+    // AdvantageScope.getInstance().setSwerveModules(sdsDrivebase);
 
     // See this function for more information.
     updateModulePoses(sdsDrivebase);

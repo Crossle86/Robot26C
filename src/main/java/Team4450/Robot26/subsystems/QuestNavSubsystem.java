@@ -36,6 +36,9 @@ public class QuestNavSubsystem extends SubsystemBase {
         this.drivebase = drivebase;
         questNav = new QuestNav();
 
+        // There is a bug with the 2026-1.0.0 version of the questnav library which caused the version check to fail and span the console every 10 seconds
+        questNav.setVersionCheckEnabled(false);
+
         this.hasQuest = questNav.isConnected();
 
         this.lastResetTime = System.currentTimeMillis();

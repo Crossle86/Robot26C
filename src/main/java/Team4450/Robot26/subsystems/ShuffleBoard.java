@@ -1,6 +1,5 @@
 package Team4450.Robot26.subsystems;
 
-import Team4450.Lib.LCD;
 import Team4450.Lib.Util;
 import Team4450.Robot26.RobotContainer;
 import Team4450.Robot26.commands.Utility.NotifierCommand;
@@ -18,9 +17,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 /**
  * This class hosts functions relating to communicating with the ShuffleBoard driver
  * station application. Primarily, it's periodic function handles the regular update
- * of the "LCD" panel's display of robot status information when the robot is active.
- * This class supports running LCD updates in a separate thread to reduce overhead
- * on the main robot control thread.
+ * of the robot status information when the robot is active.
  */
 public class ShuffleBoard extends SubsystemBase {
     public int                  currentTab, numberOfTabs = 3;
@@ -49,21 +46,11 @@ public class ShuffleBoard extends SubsystemBase {
     }
 
     /**
-     * Update the LCD tab of the Shuffleboard. Do not call if this class is running in it's
+     * Shuffleboard telemetry. Do not call if this class is running in it's
      * own thread.
      */
     public void updateDS() {    
-        Pose2d pose = RobotContainer.drivebase.getPose(); 
-        
-        // Lines 1 & 2 handled elsewhere.
-        LCD.printLine(LCD_4, "pose x=%.2fm  y=%.2fm  deg=%.1f  yaw=%.1f", pose.getX(), 
-                      pose.getY(), pose.getRotation().getDegrees(), RobotContainer.drivebase.getYaw());
-
-        LCD.printLine(LCD_6, "uLX=%.2f  uLY=%.2f - uRX=%.2f  uRY=%.2f", 
-                      RobotContainer.utilityController.getLeftX(),
-                      RobotContainer.utilityController.getLeftY(), 
-                      RobotContainer.utilityController.getRightX(),
-                      RobotContainer.utilityController.getRightY());
+        // Pose2d pose = RobotContainer.drivebase.getPose(); 
     }
 
     /**

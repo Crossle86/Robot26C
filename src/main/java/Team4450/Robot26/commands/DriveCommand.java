@@ -7,7 +7,6 @@ import java.util.function.DoubleSupplier;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import Team4450.Lib.LCD;
 import Team4450.Lib.Util;
 import Team4450.Robot26.Constants;
 import Team4450.Robot26.subsystems.Drivebase;
@@ -57,23 +56,6 @@ public class DriveCommand extends Command {
 
   @Override
   public void execute() {
-    // LCD.printLine(2, "rx=%.3f ry=%.3f throttle=%.3f strafe=%.3f rotX=%.3f
-    // rotY=%.3f",
-    // controller.getRightX(),
-    // controller.getRightY(),
-    // throttleSupplier.getAsDouble(),
-    // strafeSupplier.getAsDouble(),
-    // rotationXSupplier.getAsDouble(),
-    // rotationYSupplier.getAsDouble()
-    // );
-
-    // LCD.printLine(3, "lx=%.3f ly=%.3f", // yaw=%.3f",
-    // controller.getLeftX(),
-    // controller.getLeftY()
-    // driveBase.getGyroRotation2d().getDegrees(),
-    // driveBase.getGyroYaw() // rich
-    // );
-
     // This is the default command for the Drivebase. When running in autonmous, the
     // auto commands
     // require Drivebase, which preempts the default Drivebase command. However, if
