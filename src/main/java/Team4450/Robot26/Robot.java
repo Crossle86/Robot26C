@@ -2,10 +2,6 @@ package Team4450.Robot26;
 
 import static Team4450.Robot26.Constants.*;
 
-import com.pathplanner.lib.pathfinding.LocalADStar;
-import com.pathplanner.lib.pathfinding.Pathfinder;
-import com.pathplanner.lib.pathfinding.Pathfinding;
-
 import Team4450.Robot26.commands.Shoot;
 
 import Team4450.Lib.*;
@@ -14,7 +10,6 @@ import Team4450.Robot26.wpilib.TimedRobot;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 
-//import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -48,7 +43,7 @@ public class Robot extends TimedRobot {
 
             Util.CustomLogger.setup(true);
 
-            // The wpilib classes that underlie this class generate a lot of warning
+            // The WPIlib classes that underlie this class generate a lot of warning
             // messages that flood the Riolog and make it almost unusable. The warnings 
             // are about our code in the robotPeriodic() function taking longer than .02 
             // sec to execute. It's very hard to stay under this limit. So...copied classes 
@@ -175,10 +170,8 @@ public class Robot extends TimedRobot {
         Util.consoleLog();
 
         // This is here because Pathplanner Autos don't stop the robot when it is disabled.
-        //RobotContainer.driveBase.stop(); rich
+        RobotContainer.drivebase.stop();
 
-        // Reset driver station LEDs.
-        //
         // Set Limelight IMU mode to 1
         // I don't really like calling this here, but something can only be disabled after enabled has ran so everything should exist
         RobotOrientation rO = RobotContainer.drivebase.getRobotOrientation(); // IDK if RobotOrientation works correctly, look there to see
@@ -218,7 +211,7 @@ public class Robot extends TimedRobot {
 
         // RobotContainer function determines which auto command is selected to run.
 
-        Command autonomousCommand = robotContainer.getAutonomousCommand();
+        // Command autonomousCommand = robotContainer.getAutonomousCommand();
 
         // schedule the autonomous command (example)
 

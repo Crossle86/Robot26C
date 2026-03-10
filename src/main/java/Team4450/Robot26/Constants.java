@@ -171,16 +171,6 @@ public final class Constants {
 
     public static double FIELD_MIDDLE_Y = 4.021;
 
-    public static double ROBOT_THROTTLE_KP = 0.012;
-    public static double ROBOT_THROTTLE_KI = 0;
-    public static double ROBOT_THROTTLE_KI_MAX = 0;
-    public static double ROBOT_THROTTLE_KD = 0;
-
-    public static double ROBOT_STRAFE_KP = 0.012;
-    public static double ROBOT_STRAFE_KI = 0;
-    public static double ROBOT_STRAFE_KI_MAX = 0;
-    public static double ROBOT_STRAFE_KD = 0;
-
     public static double ROBOT_HEADING_KP = 0.02;
     public static double ROBOT_HEADING_KI = 0;
     public static double ROBOT_HEADING_KI_MAX = 0;

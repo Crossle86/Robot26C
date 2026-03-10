@@ -3,7 +3,6 @@ package Team4450.Robot26;
 import static Team4450.Robot26.Constants.*;
 
 import com.fasterxml.jackson.databind.util.Named;
-import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
@@ -47,7 +46,6 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import com.pathplanner.lib.trajectory.PathPlannerTrajectory;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -75,18 +73,6 @@ public class RobotContainer {
   // public TestSubsystem testSubsystem;
 
   public static Hopper hopper = new Hopper();
-
-  // General todo list for Cole Pearson
-  //
-  // Feat.
-  //
-  // Limelight vision replay system
-  // Average between the Limelight and Questnav
-  //
-  // When in the middle swap from hub heading targeting to left or right of the
-  // hub targeting driving
-  //
-  // Shoot on the move ability
 
   // Subsystem Default Commands.
 
@@ -128,14 +114,7 @@ public class RobotContainer {
   public static XboxController utilityController = new XboxController(UTILITY_PAD);
 
   private MonitorPower monitorPowerThread;
-  // Trajectories we load manually.
-  public static PathPlannerTrajectory ppTestTrajectory;
 
-  private static SendableChooser<Command> autoChooser;
-  private static String autonomousCommandName = "none";
-
-  private static PIDController throttlePID;
-  private static PIDController strafePID;
   private static PIDController headingPID;
 
   /**
@@ -183,9 +162,6 @@ public class RobotContainer {
     intake = new Intake();
     shooter = new Shooter(drivebase);
 
-    throttlePID = new PIDController(Constants.ROBOT_THROTTLE_KP, Constants.ROBOT_THROTTLE_KI,
-        Constants.ROBOT_THROTTLE_KD);
-    strafePID = new PIDController(Constants.ROBOT_STRAFE_KP, Constants.ROBOT_STRAFE_KI, Constants.ROBOT_STRAFE_KD);
     headingPID = new PIDController(Constants.ROBOT_HEADING_KP, Constants.ROBOT_HEADING_KI, Constants.ROBOT_HEADING_KD);
     SmartDashboard.putNumber("Heading P", Constants.ROBOT_HEADING_KP);
     SmartDashboard.putNumber("Heading I", Constants.ROBOT_HEADING_KI);
@@ -309,10 +285,8 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // ------- Driver controller buttons -------------
 
-    // For simple functions, instead of creating commands, we can call convenience
-    // functions on
-    // the target subsystem from an InstantCommand. It can be tricky deciding what
-    // functions
+    // For simple functions, instead of creating commands, we can call convenience functions on
+    // the target subsystem from an InstantCommand. It can be tricky deciding what functions
     // should be an aspect of the subsystem and what functions should be in
     // Commands...
 
@@ -322,7 +296,7 @@ public class RobotContainer {
     // .onTrue(new PointToYaw(()->PointToYaw.yawFromPOV(driverController.getPOV()),
     // driveBase, false))
 
-    // vibrate between 30 and 25 sec left in match.
+    // Vibrate between 30 and 25 sec left in match.
     new Trigger(() -> Timer.getMatchTime() < 30 && Timer.getMatchTime() > 25).whileTrue(new StartEndCommand(
         () -> {
           driverController.setRumble(RumbleType.kBothRumble, 0.5);
@@ -332,19 +306,6 @@ public class RobotContainer {
           driverController.setRumble(RumbleType.kBothRumble, 0);
           utilityController.setRumble(RumbleType.kBothRumble, 0);
         }));
-
-    // Holding top right bumper enables the alternate rotation mode in
-    // which the driver points stick to desired heading.
-
-    // new Trigger(() -> driverController.getRightBumperButton())
-    // .whileTrue(new PointToYaw(
-    // ()->PointToYaw.yawFromAxes(
-    // -MathUtil.applyDeadband(driverController.getRightX(),
-    // Constants.DRIVE_DEADBAND),
-    // -MathUtil.applyDeadband(driverController.getRightY(),
-    // Constants.DRIVE_DEADBAND)
-    // ), driveBase, false
-    // ));
 
     // Toggle slow-mode
     new Trigger(() -> driverController.getLeftBumperButton()) // Rich
@@ -383,7 +344,7 @@ public class RobotContainer {
         .onTrue(new InstantCommand(shooter::toggleDisableAutomaticDistanceTwo));
 
     // -------- Utility controller buttons ----------
-    //
+    
     new Trigger(() -> driverController.getRightBumperButton())
         .toggleOnTrue(new InstantCommand(intake::togglePivit));
 
@@ -418,41 +379,21 @@ public class RobotContainer {
    * 
    * @return The Command to run in autonomous.
    */
-  public Command getAutonomousCommand() {
-    Command autoCommand;
-    autoCommand = autoChooser.getSelected();
+  // public Command getAutonomousCommand() {
+  // }
 
-    if (autoCommand == null) {
-      autonomousCommandName = "none";
-      return autoCommand;
-    }
-
-    autonomousCommandName = autoCommand.getName();
-
-    Util.consoleLog("auto name=%s", autonomousCommandName);
-
-    return autoCommand;
-  }
-
-  public static String getAutonomousCommandName() {
-    return autonomousCommandName;
-  }
+  // public static String getAutonomousCommandName() {
+  //   return autonomousCommandName;
+  // }
 
   // Configure SendableChooser (drop down list on dashboard) with auto program
   // choices and
   // send them to SmartDashboard/ShuffleBoard.
 
   private void setAutoChoices() {
-    Util.consoleLog();
+    // autoChooser = AutoBuilder.buildAutoChooser();
 
-    // Register commands called from PathPlanner Autos.
-
-    // Create a chooser with the PathPlanner Autos located in the PP deploy
-    // folder.
-
-    autoChooser = AutoBuilder.buildAutoChooser();
-
-    SmartDashboard.putData("Auto Program", autoChooser);
+    // SmartDashboard.putData("Auto Program", autoChooser);
   }
 
   /**

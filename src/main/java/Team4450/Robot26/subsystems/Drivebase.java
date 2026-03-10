@@ -6,7 +6,6 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathConstraints;
-import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathConstraints;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.swerve.SwerveModule;
@@ -240,10 +239,6 @@ public class Drivebase extends SubsystemBase {
 
   public void driveToPose(Pose2d targetPose, double targetEndVelocity) {
     createPathfindingCommand(targetPose, targetEndVelocity).execute();
-  }
-
-  public void disableAutoDriving() {
-
   }
 
   public Command createPathfindingCommand(Pose2d targetPose, double targetEndVelocity) {
