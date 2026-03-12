@@ -4,6 +4,8 @@ import static Team4450.Robot26.Constants.DriveConstants.*;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathConstraints;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -18,22 +20,22 @@ import Team4450.Robot26.commands.DriveCommand;
 import Team4450.Robot26.subsystems.SDS.CommandSwerveDrivetrain;
 import Team4450.Robot26.subsystems.SDS.Telemetry;
 import Team4450.Robot26.subsystems.SDS.TunerConstants;
-import Team4450.Robot26.utility.AdvantageScope;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import Team4450.Robot26.utility.RobotOrientation;
-
-import edu.wpi.first.util.sendable.Sendable;
 
 /**
  * This class wraps the SDS drive base subsystem allowing us to add/modify drive
@@ -52,6 +54,7 @@ public class Drivebase extends SubsystemBase {
     public Pose2d robotPose = new Pose2d(0, 0, Rotation2d.kZero);
     public Pose2d limelightPoseEstimate = new Pose2d(0, 0, Rotation2d.kZero);
 
+
     private final Telemetry logger = new Telemetry(kMaxSpeed);
 
     // Field2d object creates the field display on the simulation and gives us an
@@ -64,8 +67,11 @@ public class Drivebase extends SubsystemBase {
     private boolean neutralModeBrake = true;
     private double maxSpeed = kMaxSpeed * kDriveReductionPct;
     private double maxRotRate = kMaxAngularRate * kRotationReductionPct;
+    private boolean driverControlled = true;
 
-    private final SwerveRequest.SwerveDriveBrake driveBrake = new SwerveRequest.SwerveDriveBrake();
+    private double lastThrottle = 0;
+    private double lastStrafe = 0;
+    private double lastRotation = 0;
 
     private final SwerveRequest.FieldCentric driveField = new SwerveRequest.FieldCentric()
         .withDeadband(kMaxSpeed * DRIVE_DEADBAND)
@@ -126,20 +132,23 @@ public class Drivebase extends SubsystemBase {
             driveField.ForwardPerspective = ForwardPerspectiveValue.BlueAlliance;
 
         // Register for SDS telemetry.
-        sdsDrivebase.registerTelemetry(logger::telemeterize);
+        // sdsDrivebase.registerTelemetry(logger::telemeterize);
 
         updateDS();
     }
 
     @Override
     public void periodic() {
-        SmartDashboard.putNumber("Drivebase velocity", getDrivebaseVelocity());
         sdsDrivebase.periodic();
 
+        SmartDashboard.putNumber("Drivebase X velocity", this.getXVelocity());
+        SmartDashboard.putNumber("Drivebase Y velocity", this.getYVelocity());
+        SmartDashboard.putNumber("Drivebase Rot velocity", this.getRotVelocity());
+
         // update 3d simulation: look in AdvantageScope.java for more
-        AdvantageScope.getInstance().setRobotPose(getPose());
-        AdvantageScope.getInstance().update();
-        AdvantageScope.getInstance().setSwerveModules(sdsDrivebase);
+        // AdvantageScope.getInstance().setRobotPose(getPose());
+        // AdvantageScope.getInstance().update();
+        // AdvantageScope.getInstance().setSwerveModules(sdsDrivebase);
 
         // See this function for more information.
         updateModulePoses(sdsDrivebase);
@@ -151,24 +160,79 @@ public class Drivebase extends SubsystemBase {
         if (robotPose != null) {
             SmartDashboard.putString("Robot pose", robotPose.toString());
         }
+        SmartDashboard.putNumber("DriveBase Current", getDrivetrainCurrent());
+    }
+
+    public double getDrivetrainCurrent() {
+        return sdsDrivebase.getModule(0).getDriveMotor().getSupplyCurrent().getValueAsDouble()
+            + sdsDrivebase.getModule(0).getSteerMotor().getSupplyCurrent().getValueAsDouble()
+            + sdsDrivebase.getModule(1).getDriveMotor().getSupplyCurrent().getValueAsDouble()
+            + sdsDrivebase.getModule(1).getSteerMotor().getSupplyCurrent().getValueAsDouble()
+            + sdsDrivebase.getModule(2).getDriveMotor().getSupplyCurrent().getValueAsDouble()
+            + sdsDrivebase.getModule(2).getSteerMotor().getSupplyCurrent().getValueAsDouble()
+            + sdsDrivebase.getModule(3).getDriveMotor().getSupplyCurrent().getValueAsDouble()
+            + sdsDrivebase.getModule(3).getSteerMotor().getSupplyCurrent().getValueAsDouble();
     }
 
     public void drive(double throttle, double strafe, double rotation) {
-        if (fieldRelativeDriving) {
-            sdsDrivebase.setControl(
-                    driveField.withVelocityX(throttle * maxSpeed)
-                    .withVelocityY(strafe * maxSpeed)
-                    .withRotationalRate(rotation * maxRotRate));
-        } else {
-            sdsDrivebase.setControl(
-                    driveRobot.withVelocityX(throttle * maxSpeed)
-                    .withVelocityY(strafe * maxSpeed)
-                    .withRotationalRate(rotation * maxRotRate));
+        if (this.lastThrottle == throttle && this.lastStrafe == strafe &&
+                this.lastRotation == rotation) {
+            return;
         }
 
-        SmartDashboard.putNumber("Drive Velocity X", driveField.VelocityX);
-        SmartDashboard.putNumber("Drive Velocity Y", driveField.VelocityY);
-        SmartDashboard.putNumber("Drive Rot Rate", driveField.RotationalRate);
+        if (fieldRelativeDriving) {
+          sdsDrivebase.setControl(
+              driveField.withVelocityX(throttle * maxSpeed)
+                  .withVelocityY(strafe * maxSpeed)
+                  .withRotationalRate(rotation * maxRotRate));
+        } else {
+          sdsDrivebase.setControl(
+              driveRobot.withVelocityX(throttle * maxSpeed)
+                  .withVelocityY(strafe * maxSpeed)
+                  .withRotationalRate(rotation * maxRotRate));
+        }
+        this.lastThrottle = throttle;
+        this.lastStrafe = strafe;
+        this.lastRotation = rotation;
+
+    }
+
+    public void driveRobotOriented(double throttle, double strafe, double rotation) {
+        sdsDrivebase.setControl(
+                driveRobot.withVelocityX(throttle * maxSpeed)
+                .withVelocityY(strafe * maxSpeed)
+                .withRotationalRate(rotation * maxRotRate));
+
+    }
+
+    public void driveToNearestOpening() {
+        double targetY = robotPose.getY();
+        if (robotPose.getY() >= 1.7 && robotPose.getY() <= 4) {
+            targetY = 1.6;
+        } else if (robotPose.getY() > 4 && robotPose.getY() <= 6.3) {
+            targetY = 6.4;
+        }
+        // driveToPose(new Pose2d(robotPose.getX(), targetY,
+        // Rotation2d.fromDegrees(0.0)), 0.0);
+    }
+
+    public void driveToPose(Pose2d targetPose, double targetEndVelocity) {
+        createPathfindingCommand(targetPose, targetEndVelocity).execute();
+    }
+
+    public Command createPathfindingCommand(Pose2d targetPose, double targetEndVelocity) {
+        // Create the constraints to use while pathfinding
+        PathConstraints constraints = new PathConstraints(
+                Constants.DriveConstants.kMaxSpeed, Constants.DriveConstants.kMaxAcceleration,
+                Units.degreesToRadians(Constants.DriveConstants.kMaxAngularRate),
+                Units.degreesToRadians(Constants.DriveConstants.kMaxAngularAcceleration));
+
+        // If AutoBuilder is configured, we can use it to build pathfinding commands
+        return AutoBuilder.pathfindToPose(
+                targetPose,
+                constraints,
+                targetEndVelocity // Goal end velocity in meters/sec
+                );
     }
 
     public void stop() {
@@ -179,9 +243,8 @@ public class Drivebase extends SubsystemBase {
      * Set drive wheels to X configuration to lock robot from moving.
      */
     public void setX() {
-        Util.consoleLog();
-
-        sdsDrivebase.applyRequest(() -> driveBrake);
+        SwerveRequest xReq = new SwerveRequest.SwerveDriveBrake();
+        sdsDrivebase.setControl(xReq);
     }
 
     public void toggleFieldRelativeDriving() {
@@ -286,6 +349,21 @@ public class Drivebase extends SubsystemBase {
             SmartDashboard.putBoolean("Trying to send current robotPose", false);
             return new Pose2d(0, 0, new Rotation2d(0));
         }
+    }
+
+    // Get the sds ordometry rotation velocity in radians per second
+    public double getRotVelocity() {
+        return Math.toDegrees(sdsDrivebase.getStateCopy().Speeds.omegaRadiansPerSecond);
+    }
+
+    // Get the sds ordometry x velocity in meters per second
+    public double getXVelocity() {
+        return sdsDrivebase.getStateCopy().Speeds.vxMetersPerSecond;
+    }
+
+    // Get the sds ordometry y velocity in meters per second
+    public double getYVelocity() {
+        return sdsDrivebase.getStateCopy().Speeds.vyMetersPerSecond;
     }
 
     @Deprecated
@@ -404,13 +482,13 @@ public class Drivebase extends SubsystemBase {
             } else {
                 airTime = FUEL_AIR_TIME_TABLE_SEC[i];
 
-                double xVelocityOffset = driveField.VelocityX * airTime;
-                double yVelocityOffset = driveField.VelocityY * airTime;
+                // double xVelocityOffset = fieldRelativeVelocityX * airTime;
+                // double yVelocityOffset = fieldRelativeVelocityY * airTime;
 
-                offsetTargetPose = new Pose2d(targetPose.getX() + xVelocityOffset, targetPose.getY() + yVelocityOffset,
-                        targetPose.getRotation());
+                // offsetTargetPose = new Pose2d(targetPose.getX() - xVelocityOffset, targetPose.getY() - yVelocityOffset,
+                // targetPose.getRotation());
 
-                return offsetTargetPose;
+                return targetPose;
             }
         }
 
@@ -423,13 +501,14 @@ public class Drivebase extends SubsystemBase {
             airTime = lowerTime + ((higherTime - lowerTime) * (distance - lowerPoint) / (higherPoint - lowerPoint));
         }
 
-        double xVelocityOffset = driveField.VelocityX * airTime;
-        double yVelocityOffset = driveField.VelocityY * airTime;
+        // double xVelocityOffset = fieldRelativeVelocityX * airTime;
+        // double yVelocityOffset = fieldRelativeVelocityY * airTime;
 
-        offsetTargetPose = new Pose2d(targetPose.getX() + xVelocityOffset, targetPose.getY() + yVelocityOffset,
-                targetPose.getRotation());
+        // offsetTargetPose = new Pose2d(targetPose.getX() - xVelocityOffset, targetPose.getY() - yVelocityOffset,
+        //     targetPose.getRotation());
 
-        return offsetTargetPose;
+        // return offsetTargetPose;
+        return targetPose;
     }
 
     // Get the distance in meters between the current robot position and the target
@@ -491,13 +570,39 @@ public class Drivebase extends SubsystemBase {
         Constants.HUB_TRACKING = !Constants.HUB_TRACKING;
     }
 
+    public void enableHubTracking() {
+        Constants.HUB_TRACKING = true;
+    }
+
+    public void disableHubTracking() {
+        Constants.HUB_TRACKING = false;
+    }
+
+    public void stopHumanDriving() {
+        driverControlled = false;
+    }
+
+    public void startHumanDriving() {
+        driverControlled = true;
+    }
+
+    public boolean getDriverControled() {
+        return driverControlled;
+    }
+
     public ChassisSpeeds getChassisSpeeds() {
         return sdsDrivebase.getChassisSpeeds();
     }
 
-    public double getDrivebaseVelocity() {
-        ChassisSpeeds speeds = this.getChassisSpeeds();
-        
-        return (speeds.vxMetersPerSecond + speeds.vyMetersPerSecond);
+    public void enabledSlowMode() {
+        this.slowMode = true;
+    }
+
+    public void disableSlowMode() {
+        this.slowMode = false;
+    }
+
+    public ChassisSpeeds getSpeeds() {
+        return sdsDrivebase.getSpeeds();
     }
 }

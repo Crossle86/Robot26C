@@ -36,6 +36,9 @@ public class QuestNavSubsystem extends SubsystemBase {
         this.drivebase = drivebase;
         questNav = new QuestNav();
 
+        // There is a bug with the 2026-1.0.0 version of the questnav library which caused the version check to fail and span the console every 10 seconds
+        questNav.setVersionCheckEnabled(false);
+
         this.hasQuest = questNav.isConnected();
 
         this.lastResetTime = System.currentTimeMillis();
@@ -44,10 +47,10 @@ public class QuestNavSubsystem extends SubsystemBase {
     }
 
     public void resetToZeroPose() {
-        Pose3d questPose3d = zeroPose.transformBy(ROBOT_TO_QUEST);
+        // Pose3d questPose3d = zeroPose.transformBy(ROBOT_TO_QUEST);
         // Because the pose is set on the quest nav we will need to store an offset that is updated by the limelight in the drivebase class because we do not want to send constant updates to the questnav system
-        questNav.setPose(questPose3d);
-        System.out.println("QuestNav internal pose reset to: " + questPose3d.toString());
+        // questNav.setPose(questPose3d);
+        // System.out.println("QuestNav internal pose reset to: " + questPose3d.toString());
     }
 
     public Pose3d getQuestRobotPose() {
@@ -97,7 +100,7 @@ public class QuestNavSubsystem extends SubsystemBase {
             // If the x or y difference from the robots current pose to the limelight estimate pose update the current quest estimate for the position
             SmartDashboard.putBoolean("Quest Connected", true);
             // 5000 miliseconds is 5 seconds
-            if (System.currentTimeMillis() - this.lastResetTime > 5000 && drivebase.getDrivebaseVelocity() < 2) {
+            if (System.currentTimeMillis() - this.lastResetTime > 1500) {
                 if (RobotContainer.visionSubsystem.frontLimelightSee || RobotContainer.visionSubsystem.rightLimelightSee) { // One of the limelight must be seeing tags
                     if (Math.abs(drivebase.getPose().getX() - drivebase.limelightPoseEstimate.getX()) > Constants.LIMELIGHT_QUEST_ERROR_AMOUNT_METERS || Math.abs(drivebase.getPose().getX() - drivebase.limelightPoseEstimate.getY()) > Constants.LIMELIGHT_QUEST_ERROR_AMOUNT_METERS) {
                         Pose3d limelightEstimatePose = new Pose3d(drivebase.limelightPoseEstimate);

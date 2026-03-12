@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.55,
-        "y": 0.77
+        "x": 3.691,
+        "y": 0.8839999999999986
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.9100000000000004,
-        "y": 6.203906249999999
+        "x": 2.051,
+        "y": 6.317906249999998
       },
       "isLocked": false,
-      "linkedName": "rightStart"
+      "linkedName": "RS"
     },
     {
       "anchor": {
-        "x": 0.49,
-        "y": 6.92
+        "x": 0.45999999999999996,
+        "y": 7.299418103448276
       },
       "prevControl": {
-        "x": 2.3500000000000005,
-        "y": 7.04
+        "x": 2.3200000000000003,
+        "y": 7.419418103448276
       },
       "nextControl": null,
       "isLocked": false,
@@ -33,8 +33,8 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 0.75,
-    "maxAcceleration": 1.0,
+    "maxVelocity": 6.0,
+    "maxAcceleration": 3.0,
     "maxAngularVelocity": 270.0,
     "maxAngularAcceleration": 270.0,
     "nominalVoltage": 12.0,
@@ -48,7 +48,7 @@
   "folder": "S-D Finished",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 70.0
+    "rotation": 0.0
   },
   "useDefaultConstraints": true
 }

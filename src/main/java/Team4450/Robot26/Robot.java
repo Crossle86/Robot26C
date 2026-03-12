@@ -2,13 +2,14 @@ package Team4450.Robot26;
 
 import static Team4450.Robot26.Constants.*;
 
+import Team4450.Robot26.commands.Shoot;
+
 import Team4450.Lib.*;
 import Team4450.Robot26.utility.RobotOrientation;
 import Team4450.Robot26.wpilib.TimedRobot;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 
-//import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -38,14 +39,11 @@ public class Robot extends TimedRobot {
         try {
             robot = this;   // Stored in Constants.
 
-            LCD.clearAll();
-            LCD.printLine(LCD_1, "Mode: RobotInit");
-
             // Set up our custom logger.
 
             Util.CustomLogger.setup(true);
 
-            // The wpilib classes that underlie this class generate a lot of warning
+            // The WPIlib classes that underlie this class generate a lot of warning
             // messages that flood the Riolog and make it almost unusable. The warnings 
             // are about our code in the robotPeriodic() function taking longer than .02 
             // sec to execute. It's very hard to stay under this limit. So...copied classes 
@@ -169,23 +167,15 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void disabledInit() {
-        Util.consoleLog();
-
-        LCD.printLine(LCD_1, "Mode: Disabled");
-
         // This is here because Pathplanner Autos don't stop the robot when it is disabled.
-        //RobotContainer.driveBase.stop(); rich
+        RobotContainer.drivebase.stop();
 
-        // Reset driver station LEDs.
-        //
         // Set Limelight IMU mode to 1
         // I don't really like calling this here, but something can only be disabled after enabled has ran so everything should exist
         RobotOrientation rO = RobotContainer.drivebase.getRobotOrientation(); // IDK if RobotOrientation works correctly, look there to see
         RobotContainer.visionSubsystem.zeroLimelightIMU(rO);
 
         RobotContainer.shuffleBoard.resetLEDs();
-
-        Util.consoleLog(functionMarker);
     }
 
     /**
@@ -196,42 +186,42 @@ public class Robot extends TimedRobot {
     public void disabledPeriodic() {
     }
 
+    public long driveStart;
+    public long shootStart;
+    public long shootTwo;
+
+    public Shoot command;
+
     /**
      * This function is called once at the start of autonomous mode and schedules
      * the autonomous command selected by your {@link RobotContainer} class.
      */
     @Override
     public void autonomousInit() {
-        Util.consoleLog(functionMarker);
-
-        LCD.clearAll();
-
-        LCD.printLine(LCD_1, "Mode: Auto - No Program");
-
         SmartDashboard.putBoolean("Disabled", false);
         SmartDashboard.putBoolean("Auto Mode", true);
 
         robotContainer.getMatchInformation();
 
         // RobotContainer function determines which auto command is selected to run.
-
-        Command autonomousCommand = robotContainer.getAutonomousCommand();
+        // Command autonomousCommand = robotContainer.getAutonomousCommand();
 
         // schedule the autonomous command (example)
-
-        try {
-            if (autonomousCommand != null) CommandScheduler.getInstance().schedule(autonomousCommand);
-        } catch (Exception e) {
-            Util.logException(e);
-            this.endCompetition();
-        }
-
-        Util.consoleLog(functionMarker);
+        // try {
+        //     if (autonomousCommand != null) CommandScheduler.getInstance().schedule(autonomousCommand);
+        // } catch (Exception e) {
+        //     Util.logException(e);
+        //     this.endCompetition();
+        // }
+        //
     }
 
     /**
      * This function is called periodically during autonomous. Technically there
-     * should be nothing here.
+     * should be nothing here as long as you are using pathplanner. Just
+     * because there is nothing here does not mean stuff is not running because
+     * all of the subsystem periodics are still running. Actually the subsystem
+     * periodics are also running when the robot is disabled.
      */
     @Override
     public void autonomousPeriodic() {
@@ -242,14 +232,7 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void teleopInit() {
-        Util.consoleLog(functionMarker);
-
         robotContainer.getMatchInformation();
-
-        LCD.clearAll();
-
-        LCD.printLine(LCD_1, "Mode: Teleop  All=%s, Start=%d, FMS=%b, msg=%s", alliance.name(), location,
-                DriverStation.isFMSAttached(), gameMessage);
 
         SmartDashboard.putBoolean("Disabled", false);
         SmartDashboard.putBoolean("Teleop Mode", true);
@@ -269,8 +252,6 @@ public class Robot extends TimedRobot {
 
         // Driving handled by DriveCommand which is default command for the Drivebase.
         // Other commands scheduled by joystick buttons.
-
-        Util.consoleLog(functionMarker);
     }
 
     /**
@@ -293,7 +274,6 @@ public class Robot extends TimedRobot {
         Util.consoleLog();
 
         // Cancels all running commands at the start of test mode.
-
         CommandScheduler.getInstance().cancelAll();
 
         // Next two lines launch teleop mode, but since we are in test

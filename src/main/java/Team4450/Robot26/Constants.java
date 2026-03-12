@@ -33,8 +33,6 @@ public final class Constants {
 	public static DriverStation.Alliance	 alliance;
 	public static int                        location, matchNumber;
 	public static String					 eventName, gameMessage;
-	    
-    public static String                     functionMarker = "-".repeat(30);
 
     public static final double  ROBOT_PERIOD_SEC = .02;
     public static final int     ROBOT_PERIOD_MS = 20;
@@ -76,12 +74,13 @@ public final class Constants {
     public static int INTAKE_PIVIT_CURRENT_LIMIT = 5;
     public static int HOPPER_CURRENT_LIMIT = 40;
 
-    public static double HOOD_TOLRENCE_MOTOR_ROTATIONS = 0.02;
+    public static double HOOD_TOLERENCE_MOTOR_ROTATIONS = 0.02;
     public static double HOOD_TOLERENCE_DEGREES = 5;
-    public static double HOOD_GEAR_RATIO = 3/8; //Make sure to change this constant in Shooter class for the hood angle calculation
+    public static double HOOD_GEAR_RATIO = 3.0/8.0;
     public static double HOOD_DOWN_ANGLE_DEGREES = 15;
+    public static double HOOD_MOTOR_POWER = 0.1;
+    public static double SHOOTER_HOOD_TOLERENCE_MOTOR_RAIDIANS = 2;
 
-    public static double SHOOTER_HOOD_TOLERENCE_MOTOR_RAIDIANS = 0.5;
 
     // Hood PID / Feedforward / MotionMagic
     public static final double HOOD_kP = 15;
@@ -101,16 +100,17 @@ public final class Constants {
     // The intake gear ratio it 1 to 1
     public static int INTAKE_GEAR_RATIO = 1 / 1;
     // I was told that the gear box on the Kraken is a 25:1
-    public static int INTAKE_PIVIT_GEAR_RATIO = (25 / 1) * (32 / 16);
+    // public static int INTAKE_PIVIT_GEAR_RATIO = (25 / 1) * (32 / 16);
+    public static double INTAKE_PIVIT_GEAR_RATIO = (62.4 / 1);
 
     public static int INTAKE_MAX_THEORETICAL_RPM = KRAKEN_X44_MAX_THEORETICAL_RPM / INTAKE_GEAR_RATIO;
-    public static int INTAKE_MAX_THEORETICAL_PIVIT_RPM = KRAKEN_X60_MAX_THEORETICAL_RPM / INTAKE_PIVIT_GEAR_RATIO;
+    public static double INTAKE_MAX_THEORETICAL_PIVIT_RPM = KRAKEN_X60_MAX_THEORETICAL_RPM / INTAKE_PIVIT_GEAR_RATIO;
 
     public static double INTAKE_PIVIT_MOTOR_POWER = 0.0;
     // The format of this value is in rotations of the pivit motor
     public static int INTAKE_PIVIT_MOTOR_POSITION_UP = 0;
     // This is an assumed value and not exact
-    public static double INTAKE_PIVIT_POSITION_DOWN_DEGREES = 100;
+    public static double INTAKE_PIVIT_POSITION_DOWN_DEGREES = 105;
     // The format of this value is in rotations of the pivit motor
     public static double INTAKE_PIVIT_MOTOR_POSITION_DOWN = (INTAKE_PIVIT_POSITION_DOWN_DEGREES / 360) * INTAKE_PIVIT_GEAR_RATIO;
     // The format of this value is in rotations of the pivit motor
@@ -129,6 +129,13 @@ public final class Constants {
     public static int VISION_BUFFER_SIZE = 1;
 
     public static double LIMELIGHT_QUEST_ERROR_AMOUNT_METERS = 0.2;
+
+    // Voltage Modifiers
+    public static double MAX_BATTERY_VOLTAGE = 13.5;
+    public static double INFEED_VOLTAGE_MULTIPLIER = 1.0;
+    public static double HOPPER_VOLTAGE_MULTIPLIER = 1.0;
+    public static double INTAKE_VOLTAGE_MULTIPLIER = 1.0;
+    public static double FLYWHEEL_VOLTAGE_MULTIPLIER = 1.0;
 
     // Assume all field measurements are in meters
     // Field Limits (The Origin of the field should be the bottom left corner therefore all pose should be in +, +)
@@ -162,16 +169,6 @@ public final class Constants {
 
     public static double FIELD_MIDDLE_Y = 4.021;
 
-    public static double ROBOT_THROTTLE_KP = 0.012;
-    public static double ROBOT_THROTTLE_KI = 0;
-    public static double ROBOT_THROTTLE_KI_MAX = 0;
-    public static double ROBOT_THROTTLE_KD = 0;
-
-    public static double ROBOT_STRAFE_KP = 0.012;
-    public static double ROBOT_STRAFE_KI = 0;
-    public static double ROBOT_STRAFE_KI_MAX = 0;
-    public static double ROBOT_STRAFE_KD = 0;
-
     public static double ROBOT_HEADING_KP = 0.02;
     public static double ROBOT_HEADING_KI = 0;
     public static double ROBOT_HEADING_KI_MAX = 0;
@@ -180,11 +177,11 @@ public final class Constants {
     public static boolean HUB_TRACKING = false;
 
     // Interpolation table
-    public static double[] FLYWHEEL_SPEED_TABLE = {3550, 3650, 3850, 3850, 4300, 4400}; // Converted from percentages to RPM
+    public static double[] FLYWHEEL_SPEED_TABLE = {3550, 3650, 3850, 4050, 4300, 4400}; // Converted from percentages to RPM
     public static double[] FLYWHEEL_SPEED_DISTANCE_TABLE = {2, 2.5, 3, 3.5, 4, 4.5};
     public static double[] HOOD_ARC_TABLE = {0.9, 1.65, 1.8, 1.85, 1.85, 2.3};
 
-    public static double[] FUEL_AIR_TIME_TABLE_SEC = {0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6};
+    public static double[] FUEL_AIR_TIME_TABLE_SEC = {1.1, 1.3, 1.4, 1.5, 1.8, 1.9, 2.1};
 
     // -------------------------------------------------------------------------------------
     // Flywheel tuning defaults (used as Shuffleboard starting values)
@@ -202,7 +199,7 @@ public final class Constants {
     // ---------------- Feedforward (Talon internal) ----------------
     // Units: Volts, Volts/(rps), Volts/(rps/s)
     public static final double FLYWHEEL_kS = 0.1;
-    public static final double FLYWHEEL_kV = 0.11;
+    public static final double FLYWHEEL_kV = 0.12;
     public static final double FLYWHEEL_kA = 0.05;
     // ---------------- PID (Velocity) ----------------
     public static final double FLYWHEEL_kP = 0.2;
@@ -224,11 +221,11 @@ public final class Constants {
     // Hopper motor constants
     public static final int HOPPER_MOTOR_CAN_ID = 12; // Example CAN ID for the Kraken X60 motor
 
-    public static final int INTAKE_DEFAULT_TARGET_RPM = 4500;
+    public static final int INTAKE_DEFAULT_TARGET_RPM = 4000;
     // PID constants for Intake
     public static final double INTAKE_kP = 0.8;
 
-    public static final int INFEED_DEFAULT_TARGET_RPM = 4000;
+    public static final int INFEED_DEFAULT_TARGET_RPM = 5500;
     // PID constants for Shooter Infeed
     public static final double INFEED_kP = 0.8;
 
@@ -264,25 +261,13 @@ public final class Constants {
         // Misc
         public static final String BEAM_BREAK                       = "Beam Break";
         public static final String DISABLE_AUTO_FLYWHEEL_UPDATE     = "disableAutomaticFlywheelUpdate";
+        public static final String DISABLE_AUTO_DISTANCE_UPDATE     = "disableAutomaticDistanceUpdate";
+        public static final String DISABLE_AUTO_DISTANCE_UPDATE_TWO     = "disableAutomaticDistanceUpdateTwo";
         public static final String ROBOT_LAUNCH_X                   = "RobotLaunchX";
         public static final String ROBOT_LAUNCH_Y                   = "RobotLaunchY";
         public static final String GOAL_POSE                        = "Goal Pose";
-        public static final String DIFFS                            = "Diffs";
         public static final String ROBOT_DISTANCE                   = "Robot Distance";
     }
-
-    // What is the LCD
-	// LCD display line number constants showing class where the line is set.
-	public static final int		LCD_1 = 1;	    // Robot, Auto Commands.
-	public static final int		LCD_2 = 2;	    // Swerve Drive command.
-	public static final int		LCD_3 = 3;	    // ShuffleBoard subsystem.
-	public static final int		LCD_4 = 4;	    // ShuffleBoard subsystem.
-	public static final int		LCD_5 = 5;	    // Autonomous commands.
-	public static final int		LCD_6 = 6;	    // ShuffleBoard subsystem.
-	public static final int		LCD_7 = 7;	    // ShuffleBoard subsystem.
-	public static final int		LCD_8 = 8;	    // ShuffleBoard subsystem.
-	public static final int		LCD_9 = 9;	    // ShuffleBoard subsystem.
-	public static final int		LCD_10 = 10;	// ShuffleBoard subsystem.
 
     public static final class DriveConstants {
         // Driving Parameters - These are the maximum capable speeds of the robot.
@@ -291,6 +276,9 @@ public final class Constants {
         // 2026 robot max speed is 5.29 m/s.
         public static double kMaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // top speed
         public static double kMaxAngularRate = RotationsPerSecond.of(1.0).in(RadiansPerSecond); // 1 rotation per second max angular velocity
+
+        public static double kMaxAcceleration = -1;
+        public static double kMaxAngularAcceleration = -1;
 
         // Velocity dead bands applied in SDS code. Times max speed.
         public static final double  DRIVE_DEADBAND = 0.01, ROTATION_DEADBAND = 0.001;

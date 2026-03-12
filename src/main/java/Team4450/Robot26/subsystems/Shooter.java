@@ -48,12 +48,15 @@ public class Shooter extends SubsystemBase {
     private boolean canInfeed;
 
     private boolean runInfeed;
+    private boolean reverseInfeed;
 
     // The format of this value is in rotations of the pivit motor
     private double hoodMotorPosition;
     private double hoodTargetMotorPosition;
     //Hood Rotation Offset
     private double hoodRotationOffset;
+
+    public boolean driverEnabledInfeed = false;
 
     DigitalInput beamBreak;
 
@@ -75,6 +78,8 @@ public class Shooter extends SubsystemBase {
     private boolean sdInit = false;
 
     private boolean disableAutomaticFlywheelUpdate = false;
+    private boolean disableAutomaticDistanceUpdate = false;
+    private boolean disableAutomaticDistanceUpdateTwo = false;
 
     private boolean enabledHood = false;
 
@@ -133,6 +138,8 @@ public class Shooter extends SubsystemBase {
         SmartDashboard.putNumber(Constants.ShooterKeys.HOOD_POWER, 0.05);
         SmartDashboard.putNumber(Constants.ShooterKeys.INFEED_TARGET_RPM, Constants.INFEED_DEFAULT_TARGET_RPM);
         SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_FLYWHEEL_UPDATE, this.disableAutomaticFlywheelUpdate);
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE, this.disableAutomaticDistanceUpdate);
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE_TWO, this.disableAutomaticDistanceUpdateTwo);
 
         SmartDashboard.putNumber("Hood Voltage Test", 0);
         this.enabledHood = false;
@@ -226,24 +233,34 @@ public class Shooter extends SubsystemBase {
         SmartDashboard.putNumber(Constants.ShooterKeys.INFEED_RPM, getInfeedRPM());
 
         if (this.runInfeed) {
-            setInfeedRPM(SmartDashboard.getNumber(Constants.ShooterKeys.INFEED_TARGET_RPM, Constants.INFEED_DEFAULT_TARGET_RPM));
+            if (this.reverseInfeed) {
+                setInfeedRPM(-SmartDashboard.getNumber(Constants.ShooterKeys.INFEED_TARGET_RPM, Constants.INFEED_DEFAULT_TARGET_RPM));
+            } else {
+                setInfeedRPM(SmartDashboard.getNumber(Constants.ShooterKeys.INFEED_TARGET_RPM, Constants.INFEED_DEFAULT_TARGET_RPM));
+            }
         }
 
         SmartDashboard.putNumber(Constants.ShooterKeys.FLYWHEEL_CURRENT_DRAW, getFlywheelCurrent());
         SmartDashboard.putNumber(Constants.ShooterKeys.INFEED_CURRENT_DRAW, getInfeedCurrent());
    }
 
-    public void updateLaunchValues(boolean interpolate){
-        // Calculate distance to goal & diffs
-        double xDiff = Math.abs(getGoalPose().getX() - drivebase.getPose().getX());
-
-        double yDiff = Math.abs(getGoalPose().getY() - drivebase.getPose().getY());
-        double distToGoal = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+    public void updateLaunchValues(boolean interpolate) {
+        double distToGoal = 0;
+        if (SmartDashboard.getBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE, this.disableAutomaticDistanceUpdate)) {
+            distToGoal = 2.5;
+        } else if (SmartDashboard.getBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE_TWO, this.disableAutomaticDistanceUpdateTwo)) {
+            distToGoal = 4.5;
+        } else {
+            // Calculate distance to goal & diffs
+            Pose2d goalPose = drivebase.getPoseToAim(getGoalPose());
+            double xDiff = Math.abs(goalPose.getX() - drivebase.getPose().getX());
+            double yDiff = Math.abs(goalPose.getY() - drivebase.getPose().getY());
+            distToGoal = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+        }
 
         SmartDashboard.putNumber(Constants.ShooterKeys.ROBOT_LAUNCH_X, drivebase.getPose().getX());
         SmartDashboard.putNumber(Constants.ShooterKeys.ROBOT_LAUNCH_Y, drivebase.getPose().getY());
         SmartDashboard.putString(Constants.ShooterKeys.GOAL_POSE, getGoalPose().toString());
-        SmartDashboard.putString(Constants.ShooterKeys.DIFFS, String.format("%.2f, %.2f", xDiff, yDiff));
         SmartDashboard.putNumber(Constants.ShooterKeys.ROBOT_DISTANCE, distToGoal);
 
         if (interpolate) {
@@ -257,10 +274,46 @@ public class Shooter extends SubsystemBase {
         }   
     }
 
+    public void toggleDisableAutomaticDistance() {
+        this.disableAutomaticDistanceUpdate = SmartDashboard.getBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE, this.disableAutomaticDistanceUpdate);
+        this.disableAutomaticDistanceUpdate = !this.disableAutomaticDistanceUpdate;
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE, this.disableAutomaticDistanceUpdate);
+    }
+
+    public void toggleDisableAutomaticDistanceTwo() {
+        this.disableAutomaticDistanceUpdateTwo = SmartDashboard.getBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE_TWO, this.disableAutomaticDistanceUpdateTwo);
+        this.disableAutomaticDistanceUpdateTwo = !this.disableAutomaticDistanceUpdateTwo;
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE_TWO, this.disableAutomaticDistanceUpdateTwo);
+    }
+
+    public void disableAutomaticDistance() {
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE, true);
+    }
+
+    public void enableAutomaticDistance() {
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE, false);
+    }
+
+    public void disableAutomaticDistanceTwo() {
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE_TWO, true);
+    }
+
+    public void enableAutomaticDistanceTwo() {
+        SmartDashboard.putBoolean(Constants.ShooterKeys.DISABLE_AUTO_DISTANCE_UPDATE_TWO, false);
+    }
+
     public boolean flywheelAtSpeed() {
-        // Change to a constant at some point
-        //
-        if (Math.abs(this.currentRPM - this.targetRPM) < 150) {
+        // Change tolerence to a constant at some point
+        if (Math.abs(this.currentRPM - this.targetRPM) < 100) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean robotAtTarget() {
+        // Change tolerence to a constant at some point
+        if (Math.abs(SmartDashboard.getNumber("Heading Error", 0)) < 14) { // This will have a little delay on it, but should be fine
             return true;
         } else {
             return false;
@@ -404,6 +457,13 @@ public class Shooter extends SubsystemBase {
         }
     }
 
+    public void reverseInfeed() {
+        if (canInfeed) {
+            this.runInfeed = true;
+            this.reverseInfeed = true;
+        }
+    }
+
     public void testInfeed() {
         if (canInfeed) {
             this.infeedMotorLeft.set(0.05);
@@ -414,6 +474,7 @@ public class Shooter extends SubsystemBase {
     public void stopInfeed() {
         if (canInfeed) {
             this.runInfeed = false;
+            this.reverseInfeed = false;
             this.infeedMotorLeft.set(0);
             this.infeedMotorRight.setControl(new Follower(this.infeedMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
         }

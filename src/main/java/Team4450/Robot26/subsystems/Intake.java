@@ -1,6 +1,7 @@
 package Team4450.Robot26.subsystems;
 
 import Team4450.Robot26.Constants;
+import Team4450.Robot26.RobotContainer;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
@@ -36,7 +37,10 @@ public class Intake extends SubsystemBase {
     // The format of this value is in rotations of the pivit motor
     private double pivitCurrentPositionMotorPosition;
 
-    private boolean runIntake;
+    private boolean runIntake = false; 
+    private boolean reverseIntake = false;
+
+    private RobotContainer robotContainer;
 
     public Intake() {
         this.canPivit = pivitMotor.isConnected();
@@ -68,9 +72,9 @@ public class Intake extends SubsystemBase {
         pivitCFG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
         // Slot 0 PID
-        pivitCFG.Slot0.kP = 15;
+        pivitCFG.Slot0.kP = 1;
         pivitCFG.Slot0.kI = 0;
-        pivitCFG.Slot0.kD = 0;
+        pivitCFG.Slot0.kD = 0.1;
 
         // Slot 0 Feedforward (Talon internal)
         pivitCFG.Slot0.kS = 0.5; 
@@ -78,7 +82,6 @@ public class Intake extends SubsystemBase {
         pivitCFG.Slot0.kA = 0;
 
         this.pivitMotor.getConfigurator().apply(pivitCFG);
-
 
         SmartDashboard.putBoolean("Intake can Pivit", canPivit);
         SmartDashboard.putBoolean("Intake can Spin", canSpin);
@@ -103,23 +106,33 @@ public class Intake extends SubsystemBase {
             this.pivitCurrentPositionMotorPosition = this.getPivitPosition();
             this.pivitCurrentPosition = this.motorPositionToPivitPosition(this.pivitCurrentPositionMotorPosition);
             SmartDashboard.putNumber("Pivit current position", this.pivitCurrentPosition);
+            SmartDashboard.putNumber("Pivit Motor Position", this.pivitCurrentPositionMotorPosition);
 
             SmartDashboard.putNumber("Intake RPM", getIntakeRPM());
 
-            if (this.runIntake) {
-                setIntakeRPM(SmartDashboard.getNumber("Intake Target RPM", Constants.INTAKE_DEFAULT_TARGET_RPM));
-            }
-
             SmartDashboard.putNumber("Intake Current Draw", getIntakeCurrent());
         }
+
+        if (this.runIntake) {
+            if (this.reverseIntake) {
+                setIntakeRPM(-SmartDashboard.getNumber("Intake Target RPM", Constants.INTAKE_DEFAULT_TARGET_RPM));
+            } else {
+                setIntakeRPM(SmartDashboard.getNumber("Intake Target RPM", Constants.INTAKE_DEFAULT_TARGET_RPM));
+            }
+        }
+
     }
 
     public void togglePivit() {
         if (this.pivitCurrentPosition >= 0.8) {
-            SmartDashboard.putNumber("Pivit Position", 0.05);
+            SmartDashboard.putNumber("Pivit Position", 0);
         } else {
             SmartDashboard.putNumber("Pivit Position", 0.95);
         }
+    }
+
+    public void pivitDown() {
+        SmartDashboard.putNumber("Pivit Position", 0.95);
     }
 
     // Linear interpolate the pivit position between zero and one with the motor rotations of up and down on the pivit
@@ -137,26 +150,23 @@ public class Intake extends SubsystemBase {
         }
     }
 
-    public void testIntake() {
+    public void reverseIntake() {
         if (canSpin) {
-            this.intakeMotorLeft.set(0.05);
-            this.intakeMotorRight.setControl(new Follower(this.intakeMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
+            this.runIntake = true;
+            this.reverseIntake = true;
         }
     }
 
-    // TODO: FIX for the start Intake command for autos
-    public void startIntakeSlow() {
-        if (canSpin) {
-            // intakeMotors.setPower(0.1);
-        }
+    public void testIntake() {
+        this.intakeMotorLeft.set(0.05);
+        this.intakeMotorRight.setControl(new Follower(this.intakeMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
     }
 
     public void stopIntake() {
-        if (canSpin) {
-            this.runIntake = false;
-            this.intakeMotorLeft.set(0);
-            this.intakeMotorRight.setControl(new Follower(this.intakeMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
-        }
+        this.runIntake = false;
+        this.reverseIntake = false;
+        this.intakeMotorLeft.set(0);
+        this.intakeMotorRight.setControl(new Follower(this.intakeMotorLeft.getDeviceID(), MotorAlignmentValue.Opposed));
     }
 
     public double getIntakeRPM() {
@@ -187,30 +197,6 @@ public class Intake extends SubsystemBase {
         }
     }
 
-    public double getIntakeVoltage() {
-        if (canSpin) {
-            return intakeMotorLeft.getSupplyVoltage(true).getValueAsDouble() + intakeMotorRight.getSupplyVoltage(true).getValueAsDouble();
-        } else {
-            return -1;
-        }
-    }
-
-    public double getIntakeLeftMotorVoltage() {
-        if (canSpin) {
-            return intakeMotorLeft.getSupplyVoltage(true).getValueAsDouble();
-        } else {
-            return -1;
-        }
-    }
-
-    public double getIntakeRightMotorVoltage() {
-        if (canSpin) {
-            return intakeMotorRight.getSupplyVoltage(true).getValueAsDouble();
-        } else {
-            return -1;
-        }
-    }
-
     public void setPivitMotorSpeed(double speed) {
         if (canPivit) {
             pivitMotor.set(speed);
@@ -235,14 +221,6 @@ public class Intake extends SubsystemBase {
     public double getPivitMotorCurrent() {
         if (canPivit) {
             return pivitMotor.getSupplyCurrent(true).getValueAsDouble();
-        } else {
-            return -1;
-        }
-    }
-
-    public double getPivitMotorVoltage() {
-        if (canPivit) {
-            return pivitMotor.getSupplyVoltage(true).getValueAsDouble();
         } else {
             return -1;
         }
